@@ -1,131 +1,37 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Rodízio — Portal CCB</title>
-<link rel="stylesheet" href="style.css">
-<!-- html2pdf lib -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Rodízio</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="header"><h1>Portal CCB</h1><p>Gerador de Rodízio</p></header>
 
-  <nav class="nav">
-    <a href="index.html">Início</a>
-    <a href="rodizio.html">Rodízio</a>
-    <a href="videoaulas.html">Vídeo Aulas</a>
-    <a href="projetos.html">Projetos</a>
-    <a href="contato.html">Contato</a>
-  </nav>
+<header>
+    <div class="logo">PORTAL CCB</div>
+    <nav>
+        <a href="index.html">Início</a>
+        <a href="rodizio.html">Rodízio</a>
+    </nav>
+</header>
 
-  <main class="container">
-    <div class="grid">
-      <div class="card">
-        <div class="huge">Gerador de Rodízio</div>
-        <div class="muted">Escolha o mês e edite os operadores — o sistema gera automaticamente e permite exportar em PDF.</div>
+<section class="container">
+    <h1>Gerador de Rodízio</h1>
 
-        <div class="controls" style="margin-top:12px;">
-          <label for="monthPick">Mês:</label>
-          <input id="monthPick" type="month" />
-          <button id="btnGenerate" class="btn-primary">Gerar Rodízio</button>
-          <button id="btnPDF" class="btn-pdf">Exportar PDF</button>
-        </div>
+    <label>Mês e Ano:</label>
+    <input type="month" id="mesAno">
 
-        <div style="margin-top:12px;">
-          <label><strong>Culto (Dom / Ter / Qui)</strong></label>
-          <textarea id="opsCulto" class="oper">ABIMAEL
-DANIEL
-FABIO
-JONATAS</textarea>
+    <label>Irmãos:</label>
+    <input type="text" id="irmaos" placeholder="Ex: ABIMAEL, DANIEL, FABIO, JONATAS">
 
-          <label style="margin-top:8px"><strong>Reunião de Jovens (domingo manhã)</strong></label>
-          <textarea id="opsReuniao" class="oper">ABIMAEL
-DANIEL FEIRA NOVA</textarea>
+    <button class="btn" onclick="gerarRodizio()">Gerar</button>
+    <button class="btn-secondary" onclick="exportarPDF()">Exportar PDF</button>
 
-          <label style="margin-top:8px"><strong>Ensaio (2ª sexta)</strong></label>
-          <textarea id="opsEnsaio" class="oper">JONATAS</textarea>
+    <div id="resultado" class="resultado"></div>
+</section>
 
-          <label style="margin-top:8px"><strong>Culto de Jovens (2º sábado)</strong></label>
-          <textarea id="opsCultoJovem" class="oper">FABIO</textarea>
-        </div>
+<script src="script.js"></script>
 
-      </div>
-
-      <aside class="card">
-        <div class="huge">Visual do Rodízio</div>
-        <div class="muted">Preview — a tabela abaixo será gerada conforme as regras.</div>
-        <div id="resultArea" style="margin-top:12px;"></div>
-      </aside>
-    </div>
-  </main>
-
-  <footer class="footer">Portal CCB</footer>
-
-<script>
-const monthShort = ['jan.','fev.','mar.','abr.','mai.','jun.','jul.','ago.','set.','out.','nov.','dez.'];
-const dayName = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
-
-function daysInMonth(year,mIdx){return new Date(year,mIdx+1,0).getDate();}
-function fmtShort(d){return d.getDate()+'-'+monthShort[d.getMonth()];}
-function nthWeekday(year,monthIdx,weekday,n){let c=0;for(let d=1;d<=daysInMonth(year,monthIdx);d++){const dt=new Date(year,monthIdx,d); if(dt.getDay()===weekday){c++; if(c===n) return dt}} return null}
-function allWeekdays(year,monthIdx,w){const a=[]; for(let d=1; d<=daysInMonth(year,monthIdx); d++){ const dt=new Date(year,monthIdx,d); if(w.includes(dt.getDay())) a.push(dt);} return a}
-function parseArea(t){ return t.split('\\n').map(s=>s.trim()).filter(s=>s.length>0); }
-
-function sectionHTML(title,color,rows){
-  let h = `<div class="title-bar" style="background:${color}">${title}</div>`;
-  h += `<table class="table-sheet"><tr><th>DIA</th><th>DATA</th><th>IRMÃO</th></tr>`;
-  rows.forEach(r=>h+=`<tr><td>${r.dia}</td><td>${r.data}</td><td>${r.irmao}</td></tr>`);
-  h += `</table>`;
-  return h;
-}
-
-function gerarRodizio(){
-  const mv = document.getElementById('monthPick').value;
-  if(!mv){ alert('Selecione o mês'); return;}
-  const [y,m] = mv.split('-').map(Number); const mi = m-1;
-  document.querySelector('.header p').textContent = `Gerador de Rodízio — ${monthShort[mi].toUpperCase()} ${y}`;
-
-  const opsCulto = parseArea(document.getElementById('opsCulto').value);
-  const opsReuniao = parseArea(document.getElementById('opsReuniao').value);
-  const opsEnsaio = parseArea(document.getElementById('opsEnsaio').value);
-  const opsCultoJov = parseArea(document.getElementById('opsCultoJovem').value);
-
-  let pC=0,pR=0,pE=0,pJ=0;
-
-  const cultoDates = allWeekdays(y,mi,[0,2,4]);
-  const cultoRows = cultoDates.map(dt=>({dia:dayName[dt.getDay()], data:fmtShort(dt), irmao: opsCulto[pC++ % opsCulto.length]}));
-
-  const doms = allWeekdays(y,mi,[0]);
-  const reuniaoRows = doms.map(dt=>({dia:dayName[dt.getDay()], data:fmtShort(dt), irmao: opsReuniao[pR++ % opsReuniao.length]}));
-
-  const dt2sexta = nthWeekday(y,mi,5,2);
-  const ensaioRows = dt2sexta ? [{dia:dayName[dt2sexta.getDay()], data:fmtShort(dt2sexta), irmao: opsEnsaio[pE % opsEnsaio.length]}] : [];
-
-  const dt2sab = nthWeekday(y,mi,6,2);
-  const cultoJovRows = dt2sab ? [{dia:dayName[dt2sab.getDay()], data:fmtShort(dt2sab), irmao: opsCultoJov[pJ % opsCultoJov.length]}] : [];
-
-  let out = '';
-  out += sectionHTML('CULTOS:','#f3f7ff',cultoRows);
-  out += sectionHTML('REUNIÃO DE JOVENS:','#e8f7ff',reuniaoRows);
-  out += sectionHTML('ENSAIO:','#fff7ea',ensaioRows);
-  out += sectionHTML('CULTO DE JOVENS:','#fff0f0',cultoJovRows);
-
-  document.getElementById('resultArea').innerHTML = out;
-}
-
-document.getElementById('btnGenerate').addEventListener('click', gerarRodizio);
-document.getElementById('btnPDF').addEventListener('click', ()=>{
-  const area = document.getElementById('resultArea');
-  if(!area.innerHTML.trim()){ alert('Gere o rodízio primeiro.'); return; }
-  const name = `Rodizio-${document.querySelector('.header p').textContent.replace(/\s+/g,'_')}.pdf`;
-  html2pdf().set({margin:10, filename:name, html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(area).save();
-});
-
-// set month default and generate
-const now = new Date();
-document.getElementById('monthPick').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
-gerarRodizio();
-</script>
 </body>
 </html>
