@@ -1,146 +1,112 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gerador de Rodízio</title>
 
     <style>
         body {
-            margin: 0;
             font-family: Arial, sans-serif;
-            background: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f4;
         }
 
         header {
-            background: #0d47a1;
-            padding: 20px;
-            text-align: center;
-        }
-
-        header h1 {
+            background: #1a1a40;
+            padding: 15px;
             color: white;
-            margin: 0;
-            font-size: 28px;
+            font-size: 22px;
+            text-align: center;
+            font-weight: bold;
         }
 
         .container {
-            max-width: 900px;
-            margin: 30px auto;
+            width: 90%;
+            max-width: 600px;
             background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin: 25px auto;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px #00000022;
         }
 
         h2 {
-            color: #0d47a1;
+            color: #1a1a40;
+        }
+
+        textarea, input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
             margin-bottom: 15px;
         }
 
-        input, button, textarea {
+        button {
             width: 100%;
             padding: 12px;
-            margin-top: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 15px;
-        }
-
-        button {
-            background: #0d47a1;
+            background: #1a1a40;
             color: white;
+            font-size: 18px;
             border: none;
+            border-radius: 8px;
             cursor: pointer;
-            transition: 0.3s;
             font-weight: bold;
         }
 
         button:hover {
-            background: #0b3d91;
+            opacity: 0.9;
         }
 
-        .result {
-            margin-top: 25px;
-            padding: 20px;
-            background: #e3f2fd;
-            border-radius: 10px;
-            display: none;
-        }
-
-        .footer-space {
-            height: 40px;
+        #resultado {
+            background: #eef4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 17px;
+            white-space: pre-line;
         }
     </style>
-
-    <!-- PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 </head>
 <body>
 
-<header>
-    <h1>Gerador Automático de Rodízio</h1>
-</header>
+<header>Gerador Automático de Rodízio</header>
 
 <div class="container">
-
     <h2>Gerar Rodízio</h2>
 
     <label>Insira os nomes (um por linha):</label>
-    <textarea id="nomes" rows="6" placeholder="Digite os nomes aqui..."></textarea>
+    <textarea id="nomes" rows="5" placeholder="Ex: João&#10;Pedro&#10;Lucas"></textarea>
 
     <label>Dias para sortear:</label>
-    <input type="number" id="dias" placeholder="Ex: 7">
+    <input type="number" id="dias" value="7" min="1" />
 
-    <button onclick="gerarRodizio()">Gerar</button>
+    <button onclick="gerar()">Gerar</button>
 
-    <div class="result" id="resultBox">
-        <h3>Resultado:</h3>
-        <pre id="resultado"></pre>
-
-        <button onclick="exportarPDF()">Exportar PDF</button>
-    </div>
-
+    <div id="resultado"></div>
 </div>
 
-<div class="footer-space"></div>
-
 <script>
-    function gerarRodizio() {
-        const nomes = document.getElementById("nomes").value.trim().split("\n").filter(x => x.trim() !== "");
-        const dias = parseInt(document.getElementById("dias").value);
+function gerar() {
+    const nomes = document.getElementById("nomes").value.trim().split("\n");
+    const dias = parseInt(document.getElementById("dias").value);
+    let resultado = "";
 
-        if (nomes.length === 0 || !dias) {
-            alert("Preencha os nomes e os dias.");
-            return;
-        }
-
-        let resultado = "";
-        let index = 0;
-
-        for (let i = 1; i <= dias; i++) {
-            resultado += `Dia ${i}: ${nomes[index]}\n`;
-            index = (index + 1) % nomes.length;
-        }
-
-        document.getElementById("resultBox").style.display = "block";
-        document.getElementById("resultado").textContent = resultado;
+    if (nomes.length === 0 || dias < 1) {
+        alert("Preencha os nomes e os dias corretamente!");
+        return;
     }
 
-    async function exportarPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-
-        let texto = document.getElementById("resultado").textContent;
-        let linhas = doc.splitTextToSize(texto, 180);
-
-        doc.setFontSize(14);
-        doc.text("Rodízio Gerado", 10, 10);
-        doc.text(linhas, 10, 20);
-
-        doc.save("rodizio.pdf");
+    for (let i = 1; i <= dias; i++) {
+        const nome = nomes[(i - 1) % nomes.length];
+        resultado += `Dia ${i}: ${nome}\n`;
     }
+
+    document.getElementById("resultado").innerText = resultado;
+}
 </script>
 
 </body>
