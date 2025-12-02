@@ -1,38 +1,50 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Portal CCB</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal CCB</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="header">
-    <h1>Portal CCB</h1>
-    <p>Central de ferramentas — rodízios, vídeo aulas e projetos</p>
-  </header>
 
-  <nav class="nav">
-    <a href="index.html">Início</a>
-    <a href="rodizio.html">Rodízio</a>
-    <a href="videoaulas.html">Vídeo Aulas</a>
-    <a href="projetos.html">Projetos</a>
-    <a href="contato.html">Contato</a>
-  </nav>
+<header>
+    <div class="logo">PORTAL CCB</div>
+    <nav>
+        <a href="index.html">Início</a>
+        <a href="rodizio.html">Gerador de Rodízio</a>
+        <a href="#">Vídeo Aulas</a>
+        <a href="#">Contato</a>
+    </nav>
+</header>
 
-  <main class="container">
+<section class="hero">
+    <h1>Bem-vindo ao Portal CCB</h1>
+    <p>Ferramentas e projetos criados para ajudar na obra de Deus.</p>
+    <a class="btn" href="rodizio.html">Acessar Gerador de Rodízio</a>
+</section>
+
+<section class="cards">
     <div class="card">
-      <div class="huge">Bem-vindo ao Portal CCB</div>
-      <div class="muted">Aqui você encontra ferramentas úteis para a congregação. Use o menu para navegar — o gerador de rodízio já está pronto para uso.</div>
-      <div style="display:flex;gap:12px;margin-top:12px;">
-        <a class="nav" style="justify-content:flex-start"><a href="rodizio.html" class="btn-primary" style="padding:10px 14px;color:#fff;text-decoration:none;border-radius:8px;">Abrir Gerador de Rodízio</a></a>
-      </div>
+        <h3>Gerador de Rodízio</h3>
+        <p>Organize cultos e reuniões automaticamente.</p>
+        <a href="rodizio.html" class="btn-small">Abrir</a>
     </div>
-  </main>
+    <div class="card">
+        <h3>Vídeo Aulas</h3>
+        <p>Conteúdos para ajudar os irmãos.</p>
+        <a href="#" class="btn-small">Ver aulas</a>
+    </div>
+    <div class="card">
+        <h3>Projetos</h3>
+        <p>Ferramentas úteis para a irmandade.</p>
+        <a href="#" class="btn-small">Explorar</a>
+    </div>
+</section>
 
-  <footer class="footer">Portal CCB </footer>
-<footer class="footer" style="text-align:center; padding:12px; margin-top:22px; color:#555;">
-  © 2025 Portal CCB
+<footer>
+    <p>Portal CCB — Todos os direitos reservados</p>
 </footer>
+
 </body>
 </html>
