@@ -4,46 +4,161 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal CCB</title>
-    <link rel="stylesheet" href="style.css">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #f4f7fb;
+            color: #1a1a1a;
+        }
+
+        /* NAVBAR */
+        header {
+            background: #0d6efd;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        nav a {
+            margin-left: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            opacity: 0.8;
+        }
+
+        /* HERO */
+        .hero {
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .hero img {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .hero h2 {
+            font-size: 38px;
+            margin-bottom: 10px;
+        }
+
+        .hero p {
+            font-size: 19px;
+            color: #444;
+        }
+
+        /* CARDS */
+        .card {
+            background: white;
+            margin: 20px auto;
+            padding: 25px;
+            border-radius: 14px;
+            width: 90%;
+            max-width: 850px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 26px;
+        }
+
+        .card p {
+            font-size: 18px;
+            color: #555;
+        }
+
+        .card a {
+            display: inline-block;
+            margin-top: 15px;
+            font-size: 18px;
+            background: #0d6efd;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 10px;
+            text-decoration: none;
+            box-shadow: 0 3px 10px rgba(13,110,253,0.3);
+        }
+
+        .card a:hover {
+            background: #0b5ed7;
+        }
+
+        /* FOOTER */
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            padding: 20px;
+            font-size: 15px;
+            color: #666;
+        }
+    </style>
 </head>
+
 <body>
 
 <header>
-    <div class="logo">PORTAL CCB</div>
+    <h1>Portal CCB</h1>
     <nav>
         <a href="index.html">Início</a>
-        <a href="rodizio.html">Gerador de Rodízio</a>
-        <a href="#">Vídeo Aulas</a>
-        <a href="#">Contato</a>
+        <a href="rodizio.html">Rodízio</a>
+        <a href="videoaulas.html">Vídeo Aulas</a>
+        <a href="projetos.html">Projetos</a>
+        <a href="contato.html">Contato</a>
     </nav>
 </header>
 
-<section class="hero">
-    <h1>Bem-vindo ao Portal CCB</h1>
-    <p>Ferramentas e projetos criados para ajudar na obra de Deus.</p>
-    <a class="btn" href="rodizio.html">Acessar Gerador de Rodízio</a>
-</section>
+<div class="hero">
 
-<section class="cards">
-    <div class="card">
-        <h3>Gerador de Rodízio</h3>
-        <p>Organize cultos e reuniões automaticamente.</p>
-        <a href="rodizio.html" class="btn-small">Abrir</a>
-    </div>
-    <div class="card">
-        <h3>Vídeo Aulas</h3>
-        <p>Conteúdos para ajudar os irmãos.</p>
-        <a href="#" class="btn-small">Ver aulas</a>
-    </div>
-    <div class="card">
-        <h3>Projetos</h3>
-        <p>Ferramentas úteis para a irmandade.</p>
-        <a href="#" class="btn-small">Explorar</a>
-    </div>
-</section>
+    <!-- FOTO AQUI -->
+    <img src="foto.png" alt="Logo do Portal">
+
+    <h2>Bem-vindo ao Portal CCB</h2>
+    <p>Ferramentas, vídeos e projetos criados com amor para ajudar a obra de Deus.</p>
+</div>
+
+<div class="card">
+    <h3>Gerador de Rodízio</h3>
+    <p>Organize cultos e reuniões automaticamente.</p>
+    <a href="rodizio.html">Abrir</a>
+</div>
+
+<div class="card">
+    <h3>Vídeo Aulas</h3>
+    <p>Conteúdos preparados para ajudar os irmãos.</p>
+    <a href="videoaulas.html">Ver aulas</a>
+</div>
+
+<div class="card">
+    <h3>Projetos</h3>
+    <p>Ferramentas úteis para a irmandade.</p>
+    <a href="projetos.html">Explorar</a>
+</div>
 
 <footer>
-    <p>Portal CCB — Todos os direitos reservados</p>
+    © 2025 Portal CCB — Todos os direitos reservados
 </footer>
 
 </body>
