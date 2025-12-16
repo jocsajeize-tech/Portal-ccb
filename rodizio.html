@@ -1,155 +1,183 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rodízio de Cultos</title>
 
 <style>
-body{font-family:Arial;background:#f4f6fb;margin:0}
-.container{max-width:1100px;margin:20px auto;background:#fff;padding:16px;border-radius:10px}
+body{
+ font-family:Arial,Helvetica,sans-serif;
+ background:#f4f6f8;
+ margin:0;padding:0;
+}
+.container{
+ max-width:900px;
+ margin:20px auto;
+ background:#fff;
+ padding:20px;
+ border-radius:10px;
+ box-shadow:0 4px 10px rgba(0,0,0,.08)
+}
 h1{text-align:center;margin:0}
-.sub{text-align:center;color:#555;margin-bottom:15px}
+.sub{text-align:center;color:#555;margin-bottom:20px}
 
-button,input,select{padding:10px;font-size:14px;width:100%;margin-top:6px}
-button{border:none;border-radius:6px;color:#fff;cursor:pointer}
-.blue{background:#1976d2}
-.red{background:#c62828}
-.gray{background:#455a64}
-.green{background:#2e7d32}
+select,button,textarea{
+ width:100%;
+ padding:10px;
+ margin-top:8px;
+ font-size:15px;
+ border-radius:6px;
+ border:1px solid #ccc
+}
+button{
+ cursor:pointer;
+ font-weight:bold;
+ border:none
+}
+.btn-gerar{background:#1976d2;color:#fff}
+.btn-pdf{background:#c62828;color:#fff}
+.btn-batismo{background:#455a64;color:#fff}
 
-.box{border:1px solid #ccc;border-radius:8px;padding:12px;margin-top:12px}
-textarea{width:100%;min-height:70px}
+.section{
+ margin-top:25px;
+ background:#eee;
+ padding:10px;
+ font-weight:bold;
+ border-radius:6px
+}
 
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid #ccc;padding:8px}
-th{background:#eee}
-.batismo{background:#e3f2fd;font-weight:bold}
-.badge{background:#1976d2;color:#fff;padding:3px 6px;border-radius:6px;font-size:12px}
+table{
+ width:100%;
+ border-collapse:collapse;
+ margin-top:10px
+}
+th,td{
+ border:1px solid #ccc;
+ padding:8px;
+ text-align:center
+}
+th{background:#f0f0f0}
 
-.section{margin-top:20px;font-weight:bold;background:#eee;padding:8px;border-radius:6px}
+.batismo{
+ background:#e3f2fd;
+ font-weight:bold
+}
+.badge{
+ background:#1976d2;
+ color:#fff;
+ padding:3px 8px;
+ border-radius:12px;
+ font-size:12px
+}
+
+textarea{resize:vertical}
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
 <body>
-<div class="container">
+<div class="container" id="areaPDF">
+
 <h1>RODÍZIO DE CULTOS</h1>
 <div class="sub">Congregação Cristã no Brasil</div>
 
 <select id="mes"></select>
-<button class="blue" onclick="gerar()">Gerar Rodízio</button>
-<button class="green" onclick="salvar()">Salvar Rodízio</button>
-<button class="gray" onclick="consultar()">Consultar Rodízios</button>
-<button class="red" onclick="exportar()">Exportar PDF</button>
-<button class="gray" onclick="marcarBatismo()">Marcar Batismo</button>
 
-<div class="box">
-<b>Culto (Dom / Ter / Qui)</b>
+<button class="btn-gerar" onclick="gerar()">Gerar Rodízio</button>
+<button class="btn-pdf" onclick="gerarPDF()">Exportar PDF</button>
+<button class="btn-batismo" onclick="modoBatismo()">Marcar Batismo</button>
+
+<hr>
+
+<label>Culto (Dom / Ter / Qui)</label>
 <textarea id="culto">ABIMAEL
 DANIEL
 FABIO
 JONATAS</textarea>
 
-<b>Reunião de Jovens</b>
+<label>Reunião de Jovens (Sábado)</label>
 <textarea id="reuniao">ABIMAEL
 DANIEL FEIRA NOVA</textarea>
 
-<b>Ensaio</b>
+<label>Ensaio (Sábado)</label>
 <textarea id="ensaio">JONATAS</textarea>
 
-<b>Culto de Jovens</b>
+<label>Culto de Jovens (Sábado)</label>
 <textarea id="cultoJovem">FABIO</textarea>
-</div>
 
 <div id="resultado"></div>
+
 </div>
 
 <script>
-const diasSemana=['domingo','segunda','terça','quarta','quinta','sexta','sábado']
-let batismos=[]
-
-function carregarMeses(){
- const sel=document.getElementById('mes')
- const hoje=new Date()
- for(let i=0;i<24;i++){
-  const d=new Date(hoje.getFullYear(),hoje.getMonth()+i,1)
-  const op=document.createElement('option')
-  op.value=d.toISOString().slice(0,7)
-  op.textContent=d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})
-  sel.appendChild(op)
- }
-}
-carregarMeses()
-
-function gerar(){
- const [ano,mes]=document.getElementById('mes').value.split('-').map(Number)
- const dias=new Date(ano,mes,0).getDate()
- const culto=lista('culto')
- let i=0,html=''
-
- html+=secao('CULTOS',ano,mes,dias,[0,2,4],culto)
-
- html+=secaoSimples('REUNIÃO DE JOVENS',lista('reuniao'),[6])
- html+=secaoSimples('ENSAIO',lista('ensaio'),[6])
- html+=secaoSimples('CULTO DE JOVENS',lista('cultoJovem'),[6])
-
- document.getElementById('resultado').innerHTML=html
- aplicarBatismo()
-}
-
-function secao(t,ano,mes,dias,permitidos,lista){
- let h=`<div class="section">${t}</div><table><tr><th>Dia</th><th>Data</th><th>Irmão</th><th></th></tr>`
- let i=0
- for(let d=1;d<=dias;d++){
-  const dt=new Date(ano,mes-1,d)
-  if(permitidos.includes(dt.getDay())){
-   const data=d+'/'+mes
-   h+=`<tr><td>${diasSemana[dt.getDay()]}</td><td>${data}</td><td>${lista[i++%lista.length]}</td><td></td></tr>`
-  }
- }
- return h+'</table>'
-}
-
-function secaoSimples(t,lista,dias){
- let h=`<div class="section">${t}</div><table><tr><th>Dia</th><th>Irmão</th></tr>`
- dias.forEach((d,i)=>h+=`<tr><td>${diasSemana[d]}</td><td>${lista[i%lista.length]}</td></tr>`)
- return h+'</table>'
-}
+const diasSemana=["domingo","segunda","terça","quarta","quinta","sexta","sábado"]
+let marcar=false
 
 function lista(id){
- return document.getElementById(id).value.split('\n').map(l=>l.trim()).filter(Boolean)
+ return document.getElementById(id).value.split("\n").map(x=>x.trim()).filter(Boolean)
 }
 
-function marcarBatismo(){
- const d=prompt("Data do batismo (ex: 18/1)")
- if(d){batismos.push(d);aplicarBatismo()}
-}
-
-function aplicarBatismo(){
- document.querySelectorAll('tr').forEach(tr=>{
-  if(tr.children[1] && batismos.includes(tr.children[1].innerText)){
-   tr.classList.add('batismo')
-   tr.children[3].innerHTML='<span class="badge">BATISMO</span>'
+function gerarSecao(titulo,ano,mes,dias,lista){
+ let html=`<div class="section">${titulo}</div>
+ <table><tr><th>Dia</th><th>Data</th><th>Irmão</th><th></th></tr>`
+ let i=0
+ let total=new Date(ano,mes,0).getDate()
+ for(let d=1;d<=total;d++){
+  let dt=new Date(ano,mes-1,d)
+  if(dias.includes(dt.getDay())){
+   html+=`<tr onclick="toggleBatismo(this)">
+   <td>${diasSemana[dt.getDay()]}</td>
+   <td>${d}/${mes}</td>
+   <td>${lista[i++%lista.length]}</td>
+   <td></td>
+   </tr>`
   }
- })
+ }
+ return html+"</table>"
 }
 
-function salvar(){
- localStorage.setItem('rodizio-'+mes.value,resultado.innerHTML)
- alert('Rodízio salvo!')
+function gerar(){
+ const [ano,mes]=document.getElementById("mes").value.split("-").map(Number)
+ let html=""
+
+ html+=gerarSecao("CULTOS",ano,mes,[0,2,4],lista("culto"))
+ html+=gerarSecao("REUNIÃO DE JOVENS",ano,mes,[6],lista("reuniao"))
+ html+=gerarSecao("ENSAIO",ano,mes,[6],lista("ensaio"))
+ html+=gerarSecao("CULTO DE JOVENS",ano,mes,[6],lista("cultoJovem"))
+
+ document.getElementById("resultado").innerHTML=html
 }
 
-function consultar(){
- const dados=localStorage.getItem('rodizio-'+mes.value)
- if(dados) resultado.innerHTML=dados
- else alert('Nenhum rodízio salvo para este mês')
+function modoBatismo(){
+ marcar=!marcar
+ alert(marcar?"Modo batismo ativado":"Modo batismo desativado")
 }
 
-function exportar(){
- html2pdf().from(document.getElementById('resultado')).save('rodizio.pdf')
+function toggleBatismo(linha){
+ if(!marcar) return
+ linha.classList.toggle("batismo")
+ linha.lastElementChild.innerHTML =
+ linha.classList.contains("batismo") ? "<span class='badge'>BATISMO</span>" : ""
 }
+
+function gerarPDF(){
+ html2pdf().from(document.getElementById("areaPDF")).save("Rodizio.pdf")
+}
+
+(function init(){
+ const sel=document.getElementById("mes")
+ let hoje=new Date()
+ for(let i=0;i<24;i++){
+  let d=new Date(hoje.getFullYear(),hoje.getMonth()+i,1)
+  let opt=document.createElement("option")
+  opt.value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`
+  opt.textContent=d.toLocaleString("pt-BR",{month:"long",year:"numeric"})
+  sel.appendChild(opt)
+ }
+ gerar()
+})();
 </script>
 </body>
 </html>
