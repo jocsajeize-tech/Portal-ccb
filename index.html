@@ -1,165 +1,182 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal CCB</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal CCB</title>
 
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: #f4f7fb;
-            color: #1a1a1a;
-        }
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+    }
 
-        /* NAVBAR */
-        header {
-            background: #0d6efd;
-            color: white;
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
+    body {
+      background: #f4f6f8;
+      color: #222;
+    }
 
-        header h1 {
-            margin: 0;
-            font-size: 22px;
-            font-weight: 600;
-        }
+    /* ===== HEADER ===== */
+    header {
+      background: #1976d2;
+      padding: 12px 0;
+    }
 
-        nav a {
-            margin-left: 20px;
-            color: white;
-            text-decoration: none;
-            font-size: 16px;
-            font-weight: 500;
-        }
+    .header-container {
+      max-width: 1100px;
+      margin: auto;
+      padding: 0 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
 
-        nav a:hover {
-            opacity: 0.8;
-        }
+    .header-title {
+      color: #fff;
+      font-size: 20px;
+      font-weight: bold;
+    }
 
-        /* HERO */
-        .hero {
-            text-align: center;
-            padding: 50px 20px;
-        }
+    nav {
+      display: flex;
+      gap: 14px;
+      margin-top: 5px;
+    }
 
-        .hero img {
-            width: 120px;
-            height: 120px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+    }
 
-        .hero h2 {
-            font-size: 38px;
-            margin-bottom: 10px;
-        }
+    /* ===== HERO ===== */
+    .hero {
+      text-align: center;
+      padding: 35px 15px;
+    }
 
-        .hero p {
-            font-size: 19px;
-            color: #444;
-        }
+    .hero img {
+      width: 90px;
+      margin-bottom: 15px;
+    }
 
-        /* CARDS */
-        .card {
-            background: white;
-            margin: 20px auto;
-            padding: 25px;
-            border-radius: 14px;
-            width: 90%;
-            max-width: 850px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
+    .hero h1 {
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
 
-        .card h3 {
-            margin: 0 0 10px 0;
-            font-size: 26px;
-        }
+    .hero p {
+      font-size: 15px;
+      color: #555;
+      max-width: 500px;
+      margin: auto;
+    }
 
-        .card p {
-            font-size: 18px;
-            color: #555;
-        }
+    /* ===== CARDS ===== */
+    .cards {
+      max-width: 1100px;
+      margin: auto;
+      padding: 20px 15px 40px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
 
-        .card a {
-            display: inline-block;
-            margin-top: 15px;
-            font-size: 18px;
-            background: #0d6efd;
-            color: white;
-            padding: 10px 25px;
-            border-radius: 10px;
-            text-decoration: none;
-            box-shadow: 0 3px 10px rgba(13,110,253,0.3);
-        }
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
 
-        .card a:hover {
-            background: #0b5ed7;
-        }
+    .card h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
 
-        /* FOOTER */
-        footer {
-            margin-top: 40px;
-            text-align: center;
-            padding: 20px;
-            font-size: 15px;
-            color: #666;
-        }
-    </style>
+    .card p {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 15px;
+    }
+
+    .card a {
+      display: inline-block;
+      padding: 10px 16px;
+      background: #1976d2;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      color: #666;
+      background: #fff;
+    }
+  </style>
 </head>
 
 <body>
 
-<header>
-    <h1>Portal CCB</h1>
-    <nav>
+  <!-- HEADER -->
+  <header>
+    <div class="header-container">
+      <div class="header-title">Portal CCB</div>
+      <nav>
         <a href="index.html">Início</a>
         <a href="rodizio.html">Rodízio</a>
-        <a href="videoaulas.html">Vídeo Aulas</a>
-        <a href="projetos.html">Projetos</a>
-        <a href="contato.html">Contato</a>
-    </nav>
-</header>
+        <a href="#">Vídeo Aulas</a>
+        <a href="#">Contato</a>
+      </nav>
+    </div>
+  </header>
 
-<div class="hero">
+  <!-- HERO -->
+  <section class="hero">
+    <!-- Se ainda não tiver imagem, pode apagar a linha abaixo -->
+    <!-- <img src="logo.png" alt="Portal CCB"> -->
 
-    <!-- FOTO AQUI -->
-    <img src="foto.png" alt="Logo do Portal">
+    <h1>Bem-vindo ao Portal CCB</h1>
+    <p>
+      Ferramentas, vídeos e projetos criados para ajudar na obra de Deus.
+    </p>
+  </section>
 
-    <h2>Bem-vindo ao Portal CCB</h2>
-    <p>Ferramentas, vídeos e projetos criados com amor para ajudar a obra de Deus.</p>
-</div>
+  <!-- CARDS -->
+  <section class="cards">
 
-<div class="card">
-    <h3>Gerador de Rodízio</h3>
-    <p>Organize cultos e reuniões automaticamente.</p>
-    <a href="rodizio.html">Abrir</a>
-</div>
+    <div class="card">
+      <h2>Gerador de Rodízio</h2>
+      <p>Organize cultos e reuniões automaticamente.</p>
+      <a href="rodizio.html">Abrir</a>
+    </div>
 
-<div class="card">
-    <h3>Vídeo Aulas</h3>
-    <p>Conteúdos preparados para ajudar os irmãos.</p>
-    <a href="videoaulas.html">Ver aulas</a>
-</div>
+    <div class="card">
+      <h2>Vídeo Aulas</h2>
+      <p>Conteúdos para ajudar os irmãos.</p>
+      <a href="#">Ver aulas</a>
+    </div>
 
-<div class="card">
-    <h3>Projetos</h3>
-    <p>Ferramentas úteis para a irmandade.</p>
-    <a href="projetos.html">Explorar</a>
-</div>
+    <div class="card">
+      <h2>Projetos</h2>
+      <p>Ferramentas úteis para a irmandade.</p>
+      <a href="#">Explorar</a>
+    </div>
 
-<footer>
-    © 2025 Portal CCB — Todos os direitos reservados
-</footer>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    © 2025 Portal CCB
+  </footer>
 
 </body>
 </html>
