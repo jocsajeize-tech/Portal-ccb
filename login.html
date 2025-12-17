@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Portal CCB — Login</title>
+<style>
+  body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0}
+  .box{max-width:360px;margin:80px auto;padding:20px;background:#fff;border-radius:6px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
+  h2{text-align:center;margin-bottom:16px}
+  input,button{width:100%;padding:10px;margin:8px 0;font-size:14px}
+  button{background:#2e6be6;color:#fff;border:none;cursor:pointer}
+  .err{color:#c62828;text-align:center;display:none}
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>Portal CCB</h2>
+  <input id="user" placeholder="Usuário" />
+  <input id="pass" type="password" placeholder="Senha" />
+  <button onclick="login()">Entrar</button>
+  <div id="err" class="err">Usuário ou senha inválidos</div>
+</div>
+<script>
+  const USERS = {
+    admin: { pass: 'admin123', role: 'admin' },
+    leitor: { pass: '1234', role: 'leitor' }
+  };
+  function login(){
+    const u = user.value.trim();
+    const p = pass.value.trim();
+    if(USERS[u] && USERS[u].pass === p){
+      localStorage.setItem('portalUser', JSON.stringify({name:u, role:USERS[u].role}));
+      window.location.href = 'rodizio.html';
+    } else {
+      err.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>
