@@ -1,200 +1,33 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Rodízio de Cultos</title>
-
 <style>
-body{
-  font-family: Arial, sans-serif;
-  background:#f4f6f8;
-  margin:0;
-}
-.container{
-  max-width:900px;
-  margin:20px auto;
-  background:#fff;
-  padding:16px;
-  border-radius:8px;
-}
-h1{text-align:center;margin-bottom:4px}
-.sub{text-align:center;color:#555;margin-bottom:16px}
-
-select, textarea, button{
-  width:100%;
-  padding:10px;
-  margin-bottom:10px;
-  font-size:16px;
-}
-textarea{min-height:80px}
-
-button{
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-}
-.btn-primary{background:#1976d2;color:#fff}
-.btn-secondary{background:#455a64;color:#fff}
-
-.section{
-  margin-top:20px;
-}
-.section h3{
-  background:#eee;
-  padding:8px;
-  border-radius:4px;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:8px;
-}
-th, td{
-  border:1px solid #ccc;
-  padding:8px;
-  text-align:left;
-}
-th{background:#f0f0f0}
-
-.saved{
-  background:#e3f2fd;
-  padding:10px;
-  border-radius:6px;
-  margin-bottom:16px;
-}
+  body{font-family:Arial,sans-serif;background:#f7f7f7;margin:0}
+  .wrap{max-width:1100px;margin:20px auto;background:#fff;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+  h1{text-align:center;margin:0}
+  .sub{text-align:center;color:#444;margin-bottom:12px}
+  .admin{color:#2e6be6;text-align:center;margin-bottom:8px;font-weight:bold}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border:1px solid #777;padding:8px;text-align:left}
+  th{background:#e6e6e6}
+  button{padding:8px 12px;margin:6px 0}
 </style>
 </head>
-
 <body>
-<div class="container">
+<div class="wrap">
+  <h1>Rodízio Mensal</h1>
+  <div class="sub">Congregação Cristã no Brasil</div>
+  <div id="adminInfo" class="admin" style="display:none"></div>
 
-<h1>RODÍZIO DE CULTOS</h1>
-<div class="sub">Congregação Cristã no Brasil</div>
+  <label>Mês:</label>
+  <input type="month" id="mes" />
+  <button onclick="gerar()">Gerar</button>
 
-<label>Mês</label>
-<input type="month" id="mes">
-
-<button class="btn-primary" onclick="gerar()">Gerar e Salvar Rodízio</button>
-
-<div class="saved">
-<label>Consultar rodízio salvo</label>
-<select id="consulta" onchange="carregarSalvo()">
-  <option value="">-- selecione --</option>
-</select>
+  <div id="out"></div>
 </div>
-
-<label>Culto (Dom / Ter / Qui)</label>
-<textarea id="culto">ABIMAEL
-DANIEL
-FABIO
-JONATAS</textarea>
-
-<label>Reunião de Jovens (Sábado)</label>
-<textarea id="jovens">ABIMAEL
-DANIEL FEIRA NOVA</textarea>
-
-<label>Ensaio (Sábado)</label>
-<textarea id="ensaio">JONATAS</textarea>
-
-<label>Culto de Jovens (Sábado)</label>
-<textarea id="cultoJovem">FABIO</textarea>
-
-<div id="resultado"></div>
-
-</div>
-
 <script>
-const diasSemana = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
-
-function parse(txt){
-  return txt.split('\n').map(v=>v.trim()).filter(v=>v);
-}
-
-function gerar(){
-  const mes = document.getElementById('mes').value;
-  if(!mes){ alert('Selecione o mês'); return; }
-
-  const [ano, m] = mes.split('-').map(Number);
-  const culto = parse(culto.value);
-  const jovens = parse(jovens.value);
-  const ensaio = parse(ensaio.value);
-  const cultoJovem = parse(cultoJovem.value);
-
-  let html = '';
-
-  function tabela(titulo, linhas){
-    let t = `<div class="section"><h3>${titulo}</h3><table>
-      <tr><th>Dia</th><th>Data</th><th>Irmão</th></tr>`;
-    linhas.forEach(l=>{
-      t+=`<tr><td>${l.dia}</td><td>${l.data}</td><td>${l.nome}</td></tr>`;
-    });
-    return t+'</table></div>';
-  }
-
-  let c=0;
-  let cultos=[];
-  for(let d=1;d<=31;d++){
-    const dt=new Date(ano,m-1,d);
-    if(dt.getMonth()!==m-1) break;
-    if([0,2,4].includes(dt.getDay())){
-      cultos.push({
-        dia:diasSemana[dt.getDay()],
-        data:`${d}/${m}`,
-        nome:culto[c++%culto.length]
-      });
-    }
-  }
-
-  let r=0;
-  let reuniao=[];
-  for(let d=1;d<=31;d++){
-    const dt=new Date(ano,m-1,d);
-    if(dt.getMonth()!==m-1) break;
-    if(dt.getDay()===6){
-      reuniao.push({
-        dia:'sábado',
-        data:`${d}/${m}`,
-        nome:jovens[r++%jovens.length]
-      });
-      break;
-    }
-  }
-
-  html += tabela('CULTOS', cultos);
-  html += tabela('REUNIÃO DE JOVENS', reuniao);
-  html += tabela('ENSAIO', reuniao.map(r=>({...r,nome:ensaio[0]})));
-  html += tabela('CULTO DE JOVENS', reuniao.map(r=>({...r,nome:cultoJovem[0]})));
-
-  resultado.innerHTML = html;
-
-  // salvar
-  localStorage.setItem('rodizio-'+mes, html);
-  atualizarConsulta();
-}
-
-function atualizarConsulta(){
-  const sel=document.getElementById('consulta');
-  sel.innerHTML='<option value="">-- selecione --</option>';
-  Object.keys(localStorage)
-    .filter(k=>k.startsWith('rodizio-'))
-    .sort()
-    .forEach(k=>{
-      const opt=document.createElement('option');
-      opt.value=k;
-      opt.textContent=k.replace('rodizio-','');
-      sel.appendChild(opt);
-    });
-}
-
-function carregarSalvo(){
-  const k=consulta.value;
-  if(k) resultado.innerHTML=localStorage.getItem(k);
-}
-
-atualizarConsulta();
-</script>
-
-</body>
-</html>
+  const user = JSON.parse(localStorage.getItem('portalUser'));
+  if(!
