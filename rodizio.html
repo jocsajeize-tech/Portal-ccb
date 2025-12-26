@@ -1,33 +1,146 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Rodízio de Cultos</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rodízio Mensal - CCB</title>
+
 <style>
-  body{font-family:Arial,sans-serif;background:#f7f7f7;margin:0}
-  .wrap{max-width:1100px;margin:20px auto;background:#fff;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-  h1{text-align:center;margin:0}
-  .sub{text-align:center;color:#444;margin-bottom:12px}
-  .admin{color:#2e6be6;text-align:center;margin-bottom:8px;font-weight:bold}
-  table{width:100%;border-collapse:collapse;margin-top:10px}
-  th,td{border:1px solid #777;padding:8px;text-align:left}
-  th{background:#e6e6e6}
-  button{padding:8px 12px;margin:6px 0}
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f2f2f2;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 600px;
+  margin: 40px auto;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+h2 {
+  text-align: center;
+  font-size: 16px;
+  color: #666;
+  margin-top: 0;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+select, button {
+  flex: 1;
+  padding: 10px;
+  font-size: 16px;
+}
+
+button {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+.resultado {
+  margin-top: 20px;
+}
+
+.card {
+  background: #f9f9f9;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+}
+
+.card h3 {
+  margin-top: 0;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
+}
+
+ul {
+  padding-left: 20px;
+}
 </style>
 </head>
+
 <body>
-<div class="wrap">
+
+<div class="container">
   <h1>Rodízio Mensal</h1>
-  <div class="sub">Congregação Cristã no Brasil</div>
-  <div id="adminInfo" class="admin" style="display:none"></div>
+  <h2>Congregação Cristã no Brasil</h2>
 
-  <label>Mês:</label>
-  <input type="month" id="mes" />
-  <button onclick="gerar()">Gerar</button>
+  <div class="controls">
+    <select id="mes">
+      <option>Janeiro / 2026</option>
+      <option>Fevereiro / 2026</option>
+      <option>Março / 2026</option>
+    </select>
+    <button onclick="gerarRodizio()">Gerar</button>
+  </div>
 
-  <div id="out"></div>
+  <div id="resultado" class="resultado"></div>
 </div>
+
 <script>
-  const user = JSON.parse(localStorage.getItem('portalUser'));
-  if(!
+function gerarRodizio() {
+  const pessoasCulto = ["ABIMAEL", "DANIEL", "FÁBIO", "JONATAS"];
+  const jovens = ["ABIMAEL", "DANIEL FEIRA NOVA"];
+  const ensaio = ["JONATAS"];
+
+  let html = "";
+
+  html += `
+    <div class="card">
+      <h3>Culto (Dom / Ter / Qui)</h3>
+      <ul>
+        <li>Domingo: ${pessoasCulto[0]}</li>
+        <li>Terça: ${pessoasCulto[1]}</li>
+        <li>Quinta: ${pessoasCulto[2]}</li>
+        <li>Domingo: ${pessoasCulto[3]}</li>
+      </ul>
+    </div>
+  `;
+
+  html += `
+    <div class="card">
+      <h3>Reunião de Jovens (Sábado)</h3>
+      <ul>
+        <li>${jovens[0]}</li>
+        <li>${jovens[1]}</li>
+      </ul>
+    </div>
+  `;
+
+  html += `
+    <div class="card">
+      <h3>Ensaio (Sábado)</h3>
+      <ul>
+        <li>${ensaio[0]}</li>
+      </ul>
+    </div>
+  `;
+
+  document.getElementById("resultado").innerHTML = html;
+}
+</script>
+
+</body>
+</html>
