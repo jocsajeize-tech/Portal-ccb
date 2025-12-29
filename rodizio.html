@@ -1,112 +1,144 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Rodízio Mensal - CCB</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Rodízio de Cultos — Gerador Automático</title>
+
 <style>
-body{font-family:Arial;background:#f4f6f8;margin:0;padding:15px}
+:root{
+  --border:#7a7a7a;
+  --blue:#dbe7ff;
+  --orange:#f4e0c8;
+  --red:#f8d6d6;
+}
+body{font-family:Arial;margin:0;background:#f7f7f7}
+.wrap{max-width:1100px;margin:18px auto;padding:16px;background:#fff}
 h1{text-align:center}
-select,button{padding:8px;margin:5px;font-size:16px}
-table{width:100%;border-collapse:collapse;margin-top:15px;background:#fff}
-th,td{border:1px solid #ccc;padding:6px;text-align:center}
+.controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+button{padding:8px;cursor:pointer}
+.btn-primary{background:#2e6be6;color:#fff;border:0}
+.btn-save{background:#2e7d32;color:#fff;border:0}
+table{width:100%;border-collapse:collapse;margin-bottom:20px}
+th,td{border:1px solid #777;padding:8px;text-align:left}
 th{background:#eee}
-tr.batismo{background:#ffe0e0}
-.card{background:#fff;padding:10px;margin-top:10px;border-radius:6px}
+.batismo{background:#ffe082;font-weight:bold}
+.badge{padding:3px 6px;background:#c62828;color:#fff;font-size:12px;border-radius:4px}
 </style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
+
 <body>
+<div class="wrap">
+<h1>RODÍZIO MÊS DE <span id="previewMes"></span></h1>
+<div style="text-align:center">Congregação Cristã no Brasil</div>
 
-<h1>Rodízio Mensal<br><small>Congregação Cristã no Brasil</small></h1>
+<div class="controls">
+  <input id="monthPick" type="month"/>
+  <button class="btn-primary" onclick="gerarRodizio()">Gerar</button>
+  <button class="btn-save" onclick="salvarRodizio()">Salvar Rodízio</button>
+</div>
 
-<select id="mes"></select>
-<button onclick="gerar()">Gerar e Salvar</button>
-<button onclick="exportar()">Exportar PDF</button>
-
-<div id="resultado"></div>
+<div id="resultArea"></div>
+</div>
 
 <script>
-const irmaos = ["ABIMAEL","DANIEL","FÁBIO","JONATAS","DANIEL FEIRA NOVA"];
-const eventos = [
- {nome:"Culto",dias:[0,2,4]},
- {nome:"Reunião de Jovens",dias:[6]},
- {nome:"Ensaio",dias:[5]},
- {nome:"Culto de Jovens",dias:[6]}
-];
+const monthShort=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+const dayName=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 
-const mesSelect = document.getElementById("mes");
-for(let m=0;m<12;m++){
- let d=new Date(2026,m,1);
- mesSelect.innerHTML+=`<option value="${m}">${d.toLocaleString("pt-BR",{month:"long"})} / 2026</option>`;
+function fmt(dt){return dt.getDate()+'-'+monthShort[dt.getMonth()]}
+function days(y,m){return new Date(y,m+1,0).getDate()}
+
+function gerarRodizio(){
+  const m=document.getElementById('monthPick').value;
+  if(!m) return alert('Selecione o mês');
+  const [y,mo]=m.split('-').map(Number);
+  document.getElementById('previewMes').innerText=monthShort[mo-1]+' '+y;
+
+  let rows='';
+  for(let d=1;d<=days(y,mo-1);d++){
+    const dt=new Date(y,mo-1,d);
+    if([0,2,4].includes(dt.getDay())){
+      rows+=linha(dt,'ABIMAEL');
+    }
+  }
+  document.getElementById('resultArea').innerHTML=tabela(rows);
+  carregarBatismos();
 }
 
-function gerar(){
- let mes = mesSelect.value;
- let ano = 2026;
- let dados=[];
- let idx=0;
-
- let diasNoMes=new Date(ano,Number(mes)+1,0).getDate();
- for(let e of eventos){
-   for(let d=1;d<=diasNoMes;d++){
-     let data=new Date(ano,mes,d);
-     if(e.dias.includes(data.getDay())){
-       dados.push({
-         evento:e.nome,
-         dia:data.toLocaleDateString("pt-BR",{weekday:"short"}),
-         data:d,
-         irmao:irmaos[idx%irmaos.length],
-         batismo:false
-       });
-       idx++;
-     }
-   }
- }
-
- localStorage.setItem("rodizio_"+mes,JSON.stringify(dados));
- render(dados,mes);
+function tabela(rows){
+  return `
+  <table>
+  <tr><th>DIA</th><th>DATA</th><th>IRMÃO</th><th>EVENTO</th></tr>
+  ${rows}
+  </table>`;
 }
 
-function render(dados,mes){
- let html="";
- eventos.forEach(ev=>{
-   html+=`<div class="card"><h3>${ev.nome}</h3><table>
-   <tr><th>Dia</th><th>Data</th><th>Irmão</th><th>Obs</th></tr>`;
-   dados.filter(d=>d.evento===ev.nome).forEach((d,i)=>{
-     html+=`<tr class="${d.batismo?"batismo":""}" onclick="toggleBatismo(${mes},'${ev.nome}',${i})">
-     <td>${d.dia}</td><td>${d.data}</td><td>${d.irmao}</td>
-     <td>${d.batismo?"BATISMO":""}</td></tr>`;
-   });
-   html+="</table></div>";
- });
- document.getElementById("resultado").innerHTML=html;
+function linha(dt,irmao){
+  const id=dt.toISOString().slice(0,10);
+  return `
+  <tr id="${id}">
+    <td>${dayName[dt.getDay()]}</td>
+    <td>${fmt(dt)}</td>
+    <td>${irmao}</td>
+    <td>
+      <button onclick="toggleBatismo('${id}')">Batismo</button>
+      <span class="badge" style="display:none">BATISMO</span>
+    </td>
+  </tr>`;
 }
 
-function toggleBatismo(mes,evento,index){
- let dados=JSON.parse(localStorage.getItem("rodizio_"+mes));
- let cont=0;
- for(let d of dados){
-   if(d.evento===evento){
-     if(cont===index){
-       d.batismo=!d.batismo;
-       break;
-     }
-     cont++;
-   }
- }
- localStorage.setItem("rodizio_"+mes,JSON.stringify(dados));
- render(dados,mes);
+/* ===== BATISMO ===== */
+function toggleBatismo(id){
+  const tr=document.getElementById(id);
+  tr.classList.toggle('batismo');
+  tr.querySelector('.badge').style.display=
+    tr.classList.contains('batismo')?'inline':'none';
+  salvarRodizio();
 }
 
-function exportar(){
- window.print();
+/* ===== SALVAR ===== */
+function salvarRodizio(){
+  const mes=document.getElementById('monthPick').value;
+  localStorage.setItem('rodizio-'+mes,
+    document.getElementById('resultArea').innerHTML);
+  salvarBatismos();
+  alert('Rodízio salvo!');
 }
 
-mesSelect.onchange=()=>{
- let dados=localStorage.getItem("rodizio_"+mesSelect.value);
- if(dados) render(JSON.parse(dados),mesSelect.value);
-};
+function carregarRodizio(){
+  const mes=document.getElementById('monthPick').value;
+  const data=localStorage.getItem('rodizio-'+mes);
+  if(data){
+    document.getElementById('resultArea').innerHTML=data;
+    carregarBatismos();
+  }
+}
+
+/* ===== BATISMOS SALVOS ===== */
+function salvarBatismos(){
+  const batismos=[];
+  document.querySelectorAll('.batismo').forEach(tr=>batismos.push(tr.id));
+  localStorage.setItem('batismos-'+monthPick.value,JSON.stringify(batismos));
+}
+
+function carregarBatismos(){
+  const list=JSON.parse(localStorage.getItem('batismos-'+monthPick.value)||'[]');
+  list.forEach(id=>{
+    const tr=document.getElementById(id);
+    if(tr){
+      tr.classList.add('batismo');
+      tr.querySelector('.badge').style.display='inline';
+    }
+  });
+}
+
+/* AUTO */
+const now=new Date();
+monthPick.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+gerarRodizio();
+carregarRodizio();
 </script>
-
 </body>
 </html>
