@@ -3,35 +3,96 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Rodízio de Cultos — CCB</title>
+<title>Página de Utilidades CCB — Rodízio</title>
 
 <style>
-:root{
-  --border:#7a7a7a;
-  --blue:#dbe7ff;
-  --orange:#f4e0c8;
-  --red:#f8d6d6;
-  --batismo:#fff2a8;
+body{
+  font-family:Segoe UI,Arial,sans-serif;
+  margin:0;
+  background:linear-gradient(135deg,#e9efff,#f7f9ff);
 }
-body{font-family:Arial,sans-serif;margin:0;background:#f4f4f4}
-.wrap{max-width:1100px;margin:20px auto;background:#fff;padding:16px}
-h1{text-align:center;margin:0}
-.controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
-button,input,select{padding:8px;font-size:14px}
-button{cursor:pointer}
-.btn{background:#2e6be6;color:#fff;border:none}
-.btn-red{background:#c62828;color:#fff;border:none}
 
-textarea{width:100%;min-height:70px}
+.wrap{
+  max-width:1100px;
+  margin:20px auto;
+  background:#fff;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.1);
+}
 
-.title{margin-top:14px;font-weight:bold}
-table{width:100%;border-collapse:collapse;margin-bottom:16px}
-th,td{border:1px solid var(--border);padding:6px}
-th{background:#eee}
-.batismo{background:var(--batismo)!important;font-weight:bold}
+h1{
+  text-align:center;
+  color:#1e3a8a;
+}
+
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:center;
+  margin:14px 0;
+}
+
+button{
+  border:none;
+  padding:8px 14px;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.btn{ background:#2563eb; color:#fff; }
+.btn:hover{ background:#1d4ed8; }
+
+.btn-red{ background:#dc2626; color:#fff; }
+.btn-red:hover{ background:#b91c1c; }
+
+textarea{
+  width:100%;
+  min-height:70px;
+  border-radius:6px;
+  border:1px solid #ccc;
+  padding:6px;
+  margin-bottom:8px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-bottom:18px;
+  border-radius:8px;
+  overflow:hidden;
+}
+
+th{
+  background:#2563eb;
+  color:#fff;
+}
+
+th,td{
+  border:1px solid #ddd;
+  padding:8px;
+  text-align:center;
+}
+
+tr:nth-child(even){
+  background:#f3f6ff;
+}
+
+.batismo{
+  background:#fff3b0 !important;
+  font-weight:bold;
+}
+
+.stats{
+  background:#f1f5ff;
+  padding:10px;
+  border-radius:8px;
+  margin-top:10px;
+}
 </style>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
 <body>
@@ -43,7 +104,8 @@ th{background:#eee}
   <input type="month" id="monthPick">
   <button class="btn" onclick="gerarRodizio()">Gerar</button>
   <button class="btn" onclick="salvarRodizio()">Salvar</button>
-  <button class="btn-red" onclick="exportarPDF()">Exportar PDF</button>
+  <button class="btn" onclick="abrirBatismo()">Adicionar Batismo</button>
+  <button class="btn-red" onclick="removerBatismo()">Remover Batismo</button>
 </div>
 
 <div class="controls">
@@ -51,19 +113,12 @@ th{background:#eee}
   <button onclick="consultarRodizio()">Consultar mês salvo</button>
 </div>
 
-<div class="title">Operadores (1 por linha)</div>
+<h3>Operadores (1 por linha)</h3>
 
-<textarea id="opsCulto">ABIMAEL
-DANIEL
-FABIO
-JONATAS</textarea>
-
-<textarea id="opsReuniao">ABIMAEL
-DANIEL</textarea>
-
-<textarea id="opsEnsaio">JONATAS</textarea>
-
-<textarea id="opsCultoJovem">FABIO</textarea>
+<textarea id="opsCulto" placeholder="Cultos"></textarea>
+<textarea id="opsReuniao" placeholder="Reunião de Jovens"></textarea>
+<textarea id="opsEnsaio" placeholder="Ensaio"></textarea>
+<textarea id="opsCultoJovem" placeholder="Culto de Jovens"></textarea>
 
 <div id="resultArea"></div>
 
@@ -73,30 +128,35 @@ DANIEL</textarea>
 const meses=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 const dias=['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
 
-function parse(txt){return txt.split('\n').map(x=>x.trim()).filter(Boolean);}
+function parse(txt){ return txt.split('\n').map(x=>x.trim()).filter(Boolean); }
 
 function gerarRodizio(){
- const mes=document.getElementById('monthPick').value;
+ const mes=monthPick.value;
  if(!mes) return alert('Escolha o mês');
  const [y,m]=mes.split('-').map(Number);
+
  const opsC=parse(opsCulto.value);
  const opsR=parse(opsReuniao.value);
  const opsE=parse(opsEnsaio.value);
  const opsJ=parse(opsCultoJovem.value);
+
+ if(!opsC.length) return alert("Preencha pelo menos os operadores de Culto");
+
  let iC=0,iR=0;
 
  let html=`<h3 style="text-align:center">${meses[m-1]} / ${y}</h3>`;
 
- html+=tabela('CULTOS',[0,2,4],opsC,()=>opsC[iC++%opsC.length],y,m);
- html+=tabela('REUNIÃO DE JOVENS',[0],opsR,()=>opsR[iR++%opsR.length],y,m);
+ html+=tabela('CULTOS',[0,2,4],()=>opsC[iC++%opsC.length],y,m);
+ html+=tabela('REUNIÃO DE JOVENS',[0],()=>opsR[iR++%opsR.length],y,m);
  html+=especial('ENSAIO',5,2,opsE,y,m);
  html+=especial('CULTO DE JOVENS',6,2,opsJ,y,m);
 
  resultArea.innerHTML=html;
  aplicarBatismos();
+ gerarEstatisticas();
 }
 
-function tabela(titulo,diasSemana,ops,next,y,m){
+function tabela(titulo,diasSemana,next,y,m){
  let h=`<table><tr><th colspan="4">${titulo}</th></tr>
  <tr><th>Dia</th><th>Data</th><th>Irmão</th><th>Batismo</th></tr>`;
  let d=new Date(y,m-1,1);
@@ -106,8 +166,8 @@ function tabela(titulo,diasSemana,ops,next,y,m){
    h+=`<tr data-dia="${id}">
    <td>${dias[d.getDay()]}</td>
    <td>${d.getDate()}/${m}</td>
-   <td>${next()}</td>
-   <td><input type="checkbox" onchange="toggleBatismo('${id}')"></td>
+   <td>${next()||''}</td>
+   <td></td>
    </tr>`;
   }
   d.setDate(d.getDate()+1);
@@ -116,6 +176,7 @@ function tabela(titulo,diasSemana,ops,next,y,m){
 }
 
 function especial(titulo,diaSemana,ordem,ops,y,m){
+ if(!ops.length) return '';
  let d=new Date(y,m-1,1),c=0;
  while(d.getMonth()==m-1){
   if(d.getDay()==diaSemana){c++;if(c==ordem)break;}
@@ -129,17 +190,35 @@ function especial(titulo,diaSemana,ordem,ops,y,m){
  <td>${dias[d.getDay()]}</td>
  <td>${d.getDate()}/${m}</td>
  <td>${ops[0]}</td>
- <td><input type="checkbox" onchange="toggleBatismo('${id}')"></td>
+ <td></td>
  </tr></table>`;
 }
 
-/* ===== BATISMO ===== */
-function toggleBatismo(id){
- const map=JSON.parse(localStorage.getItem('batismos')||'{}');
- map[id]=!map[id];
+/* BATISMOS */
+function abrirBatismo(){
+ const dia=prompt("Digite o dia do mês:");
+ if(!dia) return;
+ const mes=monthPick.value;
+ const [y,m]=mes.split('-').map(Number);
+ const id=`${y}-${m}-${Number(dia)}`;
+ let map=JSON.parse(localStorage.getItem('batismos')||'{}');
+ map[id]=true;
  localStorage.setItem('batismos',JSON.stringify(map));
  aplicarBatismos();
 }
+
+function removerBatismo(){
+ const dia=prompt("Digite o dia para remover batismo:");
+ if(!dia) return;
+ const mes=monthPick.value;
+ const [y,m]=mes.split('-').map(Number);
+ const id=`${y}-${m}-${Number(dia)}`;
+ let map=JSON.parse(localStorage.getItem('batismos')||'{}');
+ delete map[id];
+ localStorage.setItem('batismos',JSON.stringify(map));
+ aplicarBatismos();
+}
+
 function aplicarBatismos(){
  const map=JSON.parse(localStorage.getItem('batismos')||'{}');
  document.querySelectorAll('[data-dia]').forEach(tr=>{
@@ -148,10 +227,26 @@ function aplicarBatismos(){
  });
 }
 
-/* ===== SALVAR / CONSULTAR ===== */
+/* ESTATÍSTICAS */
+function gerarEstatisticas(){
+ let contagem={}
+ document.querySelectorAll('table td:nth-child(3)').forEach(td=>{
+   const nome=td.textContent.trim()
+   if(nome){
+     contagem[nome]=(contagem[nome]||0)+1
+   }
+ })
+ let html='<div class="stats"><h3>Estatísticas do mês</h3><ul>'
+ Object.keys(contagem).forEach(n=>{
+   html+=`<li>${n}: ${contagem[n]} vezes</li>`
+ })
+ html+='</ul></div>'
+ resultArea.innerHTML+=html
+}
+
+/* SALVAR */
 function salvarRodizio(){
  const mes=monthPick.value;
- if(!mes) return;
  localStorage.setItem('rodizio-'+mes,resultArea.innerHTML);
  atualizarConsulta();
  alert('Rodízio salvo');
@@ -159,7 +254,6 @@ function salvarRodizio(){
 
 function consultarRodizio(){
  const mes=consultaMes.value;
- if(!mes) return;
  resultArea.innerHTML=localStorage.getItem('rodizio-'+mes);
  aplicarBatismos();
 }
@@ -172,18 +266,8 @@ function atualizarConsulta(){
  });
 }
 
-/* ===== PDF ===== */
-function exportarPDF(){
- html2pdf().from(resultArea).set({
-  filename:'rodizio.pdf',
-  html2canvas:{scale:2},
-  jsPDF:{format:'a4'}
- }).save();
-}
-
 /* INIT */
 monthPick.value=new Date().toISOString().slice(0,7);
-gerarRodizio();
 atualizarConsulta();
 </script>
 
