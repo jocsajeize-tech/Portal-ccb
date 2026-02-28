@@ -99,7 +99,6 @@ tr:nth-child(even){
 <div class="controls">
 <input type="month" id="monthPick">
 <button class="btn" onclick="gerar()">Gerar</button>
-<button class="btn" onclick="salvar()">Salvar</button>
 <button class="btn" onclick="adicionarBatismo()">Adicionar Batismo</button>
 <button class="btn-red" onclick="removerBatismo()">Remover Batismo</button>
 </div>
@@ -112,7 +111,6 @@ tr:nth-child(even){
 <textarea id="opsCultoJovem" placeholder="Culto Jovens"></textarea>
 
 <div id="tabelas"></div>
-
 <div class="stats" id="estatisticas"></div>
 
 </div>
@@ -122,7 +120,7 @@ const tabelasDiv = document.getElementById("tabelas");
 const statsDiv = document.getElementById("estatisticas");
 const monthPick = document.getElementById("monthPick");
 
-let batismos = JSON.parse(localStorage.getItem("batismos")||"{}");
+let batismos = JSON.parse(localStorage.getItem("batismos") || "{}");
 
 function parseLista(text){
   return text.split("\n").map(x=>x.trim()).filter(x=>x);
@@ -152,20 +150,24 @@ function gerar(){
 
     for(let d=1; d<=diasNoMes; d++){
       let data = new Date(ano,mes-1,d);
+
       if(diasSemana.includes(data.getDay())){
 
-        let nome = lista[idx%lista.length];
+        let nome = lista[idx % lista.length];
         idx++;
 
         estat[nome] = (estat[nome]||0)+1;
 
         let chave = `${ano}-${mes}-${d}`;
-        let batismoTxt = batismos[chave] ? `<span class="batismo-text">BATISMO</span>` : "";
+
+        let batismoTxt = batismos[chave] 
+          ? `<span class="batismo-text">BATISMO</span>` 
+          : "";
 
         html += `<tr>
-        <td>${["DOM","SEG","TER","QUA","QUI","SEX","SAB"][data.getDay()]}</td>
-        <td>${d}/${mes} ${batismoTxt}</td>
-        <td>${nome}</td>
+          <td>${["DOM","SEG","TER","QUA","QUI","SEX","SAB"][data.getDay()]}</td>
+          <td>${d}/${mes}${batismoTxt}</td>
+          <td>${nome}</td>
         </tr>`;
       }
     }
@@ -182,28 +184,33 @@ function gerar(){
   statsDiv.innerHTML=estatHtml;
 }
 
-function salvar(){
-  localStorage.setItem("escala_"+monthPick.value,tabelasDiv.innerHTML);
-  alert("Salvo!");
-}
-
 function adicionarBatismo(){
   if(!monthPick.value) return alert("Escolha o mês");
   let dia = prompt("Digite o dia do batismo:");
   if(!dia) return;
-  const chave = `${monthPick.value.replace("-","-")}-${Number(dia)}`;
+
+  const [ano,mes] = monthPick.value.split("-");
+
+  let chave = `${ano}-${Number(mes)}-${Number(dia)}`;
+
   batismos[chave]=true;
   localStorage.setItem("batismos",JSON.stringify(batismos));
+
   gerar();
 }
 
 function removerBatismo(){
   if(!monthPick.value) return alert("Escolha o mês");
-  let dia = prompt("Digite o dia para remover batismo:");
+  let dia = prompt("Digite o dia para remover:");
   if(!dia) return;
-  const chave = `${monthPick.value.replace("-","-")}-${Number(dia)}`;
+
+  const [ano,mes] = monthPick.value.split("-");
+
+  let chave = `${ano}-${Number(mes)}-${Number(dia)}`;
+
   delete batismos[chave];
   localStorage.setItem("batismos",JSON.stringify(batismos));
+
   gerar();
 }
 </script>
