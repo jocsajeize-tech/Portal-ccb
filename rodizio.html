@@ -3,12 +3,11 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Rodízio de Cultos — Gerador Automático</title>
+<title>Rodízio de Cultos — Sistema Avançado</title>
 
 <style>
 :root{
   --border:#7a7a7a;
-  --header-bg:#6f6f6f;
   --blue:#dbe7ff;
   --orange:#f4e0c8;
   --red:#f8d6d6;
@@ -29,6 +28,12 @@ textarea{width:100%;min-height:70px;margin-bottom:8px}
 table{width:100%;border-collapse:collapse;margin-bottom:20px}
 th,td{border:1px solid var(--border);padding:6px;text-align:center}
 th{background:#e6e6e6}
+.badge{padding:3px 6px;border-radius:6px;font-size:12px;font-weight:bold;color:#fff}
+.batismo{background:#2e7d32}
+.santaceia{background:#6a1b9a}
+.especial{background:#ef6c00}
+.aviso{background:#c62828}
+.highlight{background:#fff8e1}
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -36,7 +41,6 @@ th{background:#e6e6e6}
 <body>
 
 <div class="wrap">
-
 <h1>RODÍZIO MÊS DE <span id="previewMes"></span></h1>
 <div class="sub">Congregação Cristã no Brasil</div>
 
@@ -68,7 +72,6 @@ DANIEL FEIRA NOVA</textarea>
 </div>
 
 <div id="resultArea"></div>
-
 </div>
 
 <script>
@@ -81,31 +84,68 @@ function parseArea(t){return t.split('\n').map(s=>s.trim()).filter(Boolean);}
 function nthWeekday(y,m,w,n){let c=0;for(let d=1;d<=daysInMonth(y,m);d++){let dt=new Date(y,m,d);if(dt.getDay()==w){c++;if(c==n)return dt}}return null;}
 function allWeekdays(y,m,wanted){let a=[];for(let d=1;d<=daysInMonth(y,m);d++){let dt=new Date(y,m,d);if(wanted.includes(dt.getDay()))a.push(dt)}return a;}
 
+function getBadge(tipo){
+if(tipo==="Batismo") return '<span class="badge batismo">BATISMO</span>';
+if(tipo==="Santa Ceia") return '<span class="badge santaceia">SANTA CEIA</span>';
+if(tipo==="Especial") return '<span class="badge especial">ESPECIAL</span>';
+if(tipo==="Aviso") return '<span class="badge aviso">AVISO</span>';
+return "";
+}
+
 function sectionHTML(title,color,rows,tipo){
-let html=`<div class="title-bar" style="background:${color}">${title}</div>`;
-html+=`<table><tr><th>DIA</th><th>DATA</th><th>IRMÃO</th><th>COMENTÁRIO</th><th>AÇÃO</th></tr>`;
+let hasComment=false;
+
 rows.forEach(r=>{
 let key=tipo+"_"+r.data+"_"+document.getElementById('monthPick').value;
-let comentario=localStorage.getItem(key)||"";
-html+=`<tr>
-<td>${r.dia}</td>
-<td>${r.data}</td>
-<td>${r.irmao}</td>
-<td id="c_${key}">${comentario}</td>
-<td><button onclick="editarComentario('${key}')">Comentar</button></td>
-</tr>`;
+if(localStorage.getItem(key)) hasComment=true;
 });
+
+let html=`<div class="title-bar" style="background:${color}">${title}</div>`;
+html+=`<table><tr><th>DIA</th><th>DATA</th><th>IRMÃO</th>`;
+if(hasComment) html+=`<th>OBSERVAÇÃO</th>`;
+html+=`<th>AÇÃO</th></tr>`;
+
+rows.forEach(r=>{
+let key=tipo+"_"+r.data+"_"+document.getElementById('monthPick').value;
+let dataObj=JSON.parse(localStorage.getItem(key)||"null");
+
+let rowClass=dataObj?"highlight":"";
+html+=`<tr class="${rowClass}">`;
+html+=`<td>${r.dia}</td>`;
+html+=`<td>${r.data}</td>`;
+html+=`<td>${r.irmao}</td>`;
+
+if(hasComment){
+if(dataObj){
+html+=`<td>⚠️ ${getBadge(dataObj.tipo)}<br>${dataObj.texto}</td>`;
+}else{
+html+=`<td></td>`;
+}
+}
+
+html+=`<td><button onclick="editarComentario('${key}')">Comentar</button></td>`;
+html+=`</tr>`;
+});
+
 html+=`</table>`;
 return html;
 }
 
 function editarComentario(key){
-let atual=localStorage.getItem(key)||"";
-let novo=prompt("Digite o comentário:",atual);
-if(novo!==null){
-localStorage.setItem(key,novo);
-document.getElementById("c_"+key).innerText=novo;
+let atual=JSON.parse(localStorage.getItem(key)||"null");
+
+let tipo=prompt("Tipo (Batismo, Santa Ceia, Especial, Aviso):", atual?atual.tipo:"");
+if(tipo===null) return;
+
+let texto=prompt("Descrição:", atual?atual.texto:"");
+if(texto===null) return;
+
+if(texto.trim()===""){
+localStorage.removeItem(key);
+}else{
+localStorage.setItem(key,JSON.stringify({tipo:tipo,texto:texto}));
 }
+gerarRodizio();
 }
 
 function gerarRodizio(){
@@ -122,31 +162,12 @@ const opsCultoJov=parseArea(document.getElementById('opsCultoJovem').value);
 
 let pC=0,pR=0,pE=0,pJ=0;
 
-const cultoRows=allWeekdays(y,mi,[0,2,4]).map(dt=>({
-dia:dayName[dt.getDay()],
-data:fmtShort(dt),
-irmao:opsCulto[pC++%opsCulto.length]
-}));
-
-const reuniaoRows=allWeekdays(y,mi,[0]).map(dt=>({
-dia:dayName[dt.getDay()],
-data:fmtShort(dt),
-irmao:opsReuniao[pR++%opsReuniao.length]
-}));
-
+const cultoRows=allWeekdays(y,mi,[0,2,4]).map(dt=>({dia:dayName[dt.getDay()],data:fmtShort(dt),irmao:opsCulto[pC++%opsCulto.length]}));
+const reuniaoRows=allWeekdays(y,mi,[0]).map(dt=>({dia:dayName[dt.getDay()],data:fmtShort(dt),irmao:opsReuniao[pR++%opsReuniao.length]}));
 const dt2sexta=nthWeekday(y,mi,5,2);
-const ensaioRows=dt2sexta?[{
-dia:dayName[dt2sexta.getDay()],
-data:fmtShort(dt2sexta),
-irmao:opsEnsaio[pE%opsEnsaio.length]
-}]:[];
-
+const ensaioRows=dt2sexta?[{dia:dayName[dt2sexta.getDay()],data:fmtShort(dt2sexta),irmao:opsEnsaio[pE%opsEnsaio.length]}]:[];
 const dt2sab=nthWeekday(y,mi,6,2);
-const cultoJovRows=dt2sab?[{
-dia:dayName[dt2sab.getDay()],
-data:fmtShort(dt2sab),
-irmao:opsCultoJov[pJ%opsCultoJov.length]
-}]:[];
+const cultoJovRows=dt2sab?[{dia:dayName[dt2sab.getDay()],data:fmtShort(dt2sab),irmao:opsCultoJov[pJ%opsCultoJov.length]}]:[];
 
 let out='';
 out+=sectionHTML('CULTOS','#e6e6e6',cultoRows,'culto');
@@ -158,13 +179,12 @@ document.getElementById('resultArea').innerHTML=out;
 }
 
 document.getElementById("btnPDF").addEventListener("click",()=>{
-const area=document.getElementById("resultArea");
 html2pdf().set({
 margin:10,
 filename:`Rodizio-${document.getElementById('previewMes').textContent}.pdf`,
 html2canvas:{scale:2},
-jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-}).from(area).save();
+jsPDF:{unit:'mm',format:'a4'}
+}).from(document.getElementById("resultArea")).save();
 });
 
 const now=new Date();
