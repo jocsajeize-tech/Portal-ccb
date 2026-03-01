@@ -1,222 +1,149 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Rodízio - Central</title>
+<title>Rodízio CCB</title>
 
 <style>
-body{
-  font-family:Segoe UI,Arial,sans-serif;
-  margin:0;
-  background:linear-gradient(135deg,#e9efff,#f7f9ff);
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+    padding: 20px;
 }
 
-.wrap{
-  max-width:1100px;
-  margin:20px auto;
-  background:#fff;
-  padding:20px;
-  border-radius:12px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.1);
+h1 {
+    text-align: center;
 }
 
-h1{
-  text-align:center;
-  color:#1e3a8a;
+.container {
+    max-width: 900px;
+    margin: auto;
 }
 
-.controls{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  justify-content:center;
-  margin:14px 0;
+select, input, button {
+    padding: 8px;
+    margin: 5px 0;
 }
 
-button{
-  border:none;
-  padding:8px 14px;
-  border-radius:6px;
-  font-weight:bold;
-  cursor:pointer;
+button {
+    cursor: pointer;
+    background: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 5px;
 }
 
-.btn{ background:#2563eb; color:#fff; }
-.btn-red{ background:#dc2626; color:#fff; }
-
-textarea{
-  width:100%;
-  min-height:70px;
-  border-radius:6px;
-  border:1px solid #ccc;
-  padding:6px;
-  margin-bottom:10px;
+button:hover {
+    background: #0b5ed7;
 }
 
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-bottom:18px;
-  border-radius:8px;
-  overflow:hidden;
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: white;
 }
 
-th{
-  background:#2563eb;
-  color:#fff;
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
 }
 
-th,td{
-  border:1px solid #ddd;
-  padding:8px;
-  text-align:center;
+th {
+    background: #0d6efd;
+    color: white;
 }
 
-tr:nth-child(even){
-  background:#f3f6ff;
-}
-
-.batismo-text{
-  color:#dc2626;
-  font-weight:bold;
-  display:block;
-  margin-top:4px;
-}
-
-.stats{
-  background:#f1f5ff;
-  padding:15px;
-  border-radius:8px;
+.batismo-box {
+    background: #e9f2ff;
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 10px;
 }
 </style>
 </head>
+
 <body>
 
-<div class="wrap">
+<div class="container">
 
-<h1>RODÍZIO MENSAL — CENTRAL</h1>
+<h1>RODÍZIO DE CULTOS</h1>
 
-<div class="controls">
-<input type="month" id="monthPick">
-<button class="btn" onclick="gerar()">Gerar</button>
-<button class="btn" onclick="adicionarBatismo()">Adicionar Batismo</button>
-<button class="btn-red" onclick="removerBatismo()">Remover Batismo</button>
+<label><strong>Escolha a Igreja:</strong></label><br>
+<select id="igrejaSelect" onchange="carregarDados()">
+    <option value="central">Central</option>
+    <option value="alto">Alto da Boa Vista</option>
+    <option value="outras">Outras Localidades</option>
+</select>
+
+<div class="batismo-box">
+    <h3>Adicionar Dia de Batismo</h3>
+    <input type="date" id="dataBatismo">
+    <button onclick="adicionarBatismo()">Adicionar</button>
 </div>
 
-<h3>Operadores (1 por linha)</h3>
-
-<textarea id="opsCulto" placeholder="Cultos"></textarea>
-<textarea id="opsReuniao" placeholder="Reunião Jovens"></textarea>
-<textarea id="opsEnsaio" placeholder="Ensaio"></textarea>
-<textarea id="opsCultoJovem" placeholder="Culto Jovens"></textarea>
-
-<div id="tabelas"></div>
-<div class="stats" id="estatisticas"></div>
+<table>
+    <thead>
+        <tr>
+            <th>Datas de Batismo</th>
+            <th>Remover</th>
+        </tr>
+    </thead>
+    <tbody id="tabelaBatismo">
+    </tbody>
+</table>
 
 </div>
 
 <script>
-const STORAGE_KEY = "rodizio_central_batismos";
 
-const tabelasDiv = document.getElementById("tabelas");
-const statsDiv = document.getElementById("estatisticas");
-const monthPick = document.getElementById("monthPick");
-
-let batismos = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-
-function parseLista(text){
-  return text.split("\n").map(x=>x.trim()).filter(x=>x);
+function chaveAtual() {
+    const igreja = document.getElementById("igrejaSelect").value;
+    return "batismos_" + igreja;
 }
 
-function gerar(){
-  if(!monthPick.value) return alert("Escolha o mês");
+function carregarDados() {
+    const tabela = document.getElementById("tabelaBatismo");
+    tabela.innerHTML = "";
 
-  const [ano,mes] = monthPick.value.split("-").map(Number);
-  const diasNoMes = new Date(ano,mes,0).getDate();
+    const dados = JSON.parse(localStorage.getItem(chaveAtual())) || [];
 
-  tabelasDiv.innerHTML="";
-  let estat = {};
+    dados.forEach((data, index) => {
+        const linha = tabela.insertRow();
+        linha.insertCell(0).innerText = data;
 
-  criarTabela("CULTOS",[0,2,4],parseLista(opsCulto.value));
-  criarTabela("REUNIÃO DE JOVENS",[0],parseLista(opsReuniao.value));
-  criarTabela("ENSAIO",[5],parseLista(opsEnsaio.value));
-  criarTabela("CULTO DE JOVENS",[6],parseLista(opsCultoJovem.value));
+        const btn = document.createElement("button");
+        btn.innerText = "Excluir";
+        btn.onclick = function() {
+            removerBatismo(index);
+        };
 
-  function criarTabela(titulo,diasSemana,lista){
-    if(lista.length===0) return;
-
-    let html = `<h3>${titulo}</h3><table>
-    <tr><th>Dia</th><th>Data</th><th>Nome</th></tr>`;
-
-    let idx=0;
-
-    for(let d=1; d<=diasNoMes; d++){
-      let data = new Date(ano,mes-1,d);
-
-      if(diasSemana.includes(data.getDay())){
-
-        let nome = lista[idx % lista.length];
-        idx++;
-
-        estat[nome] = (estat[nome]||0)+1;
-
-        let chave = `${ano}-${mes}-${d}`;
-
-        // 🔴 BATISMO SOMENTE EM CULTOS
-        let batismoTxt = "";
-        if(titulo === "CULTOS" && batismos[chave]){
-          batismoTxt = `<span class="batismo-text">BATISMO</span>`;
-        }
-
-        html += `<tr>
-          <td>${["DOM","SEG","TER","QUA","QUI","SEX","SAB"][data.getDay()]}</td>
-          <td>${d}/${mes}${batismoTxt}</td>
-          <td>${nome}</td>
-        </tr>`;
-      }
-    }
-
-    html += "</table>";
-    tabelasDiv.innerHTML += html;
-  }
-
-  let estatHtml="<h3>Estatísticas do mês</h3><ul>";
-  for(let n in estat){
-    estatHtml += `<li>${n}: ${estat[n]} vezes</li>`;
-  }
-  estatHtml+="</ul>";
-  statsDiv.innerHTML=estatHtml;
+        linha.insertCell(1).appendChild(btn);
+    });
 }
 
-function adicionarBatismo(){
-  if(!monthPick.value) return alert("Escolha o mês");
-  let dia = prompt("Digite o dia do batismo (somente culto):");
-  if(!dia) return;
+function adicionarBatismo() {
+    const input = document.getElementById("dataBatismo");
+    if (!input.value) return alert("Escolha uma data!");
 
-  const [ano,mes] = monthPick.value.split("-");
+    const dados = JSON.parse(localStorage.getItem(chaveAtual())) || [];
+    dados.push(input.value);
 
-  let chave = `${ano}-${Number(mes)}-${Number(dia)}`;
-
-  batismos[chave]=true;
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(batismos));
-
-  gerar();
+    localStorage.setItem(chaveAtual(), JSON.stringify(dados));
+    input.value = "";
+    carregarDados();
 }
 
-function removerBatismo(){
-  if(!monthPick.value) return alert("Escolha o mês");
-  let dia = prompt("Digite o dia para remover:");
-  if(!dia) return;
-
-  const [ano,mes] = monthPick.value.split("-");
-
-  let chave = `${ano}-${Number(mes)}-${Number(dia)}`;
-
-  delete batismos[chave];
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(batismos));
-
-  gerar();
+function removerBatismo(index) {
+    const dados = JSON.parse(localStorage.getItem(chaveAtual())) || [];
+    dados.splice(index, 1);
+    localStorage.setItem(chaveAtual(), JSON.stringify(dados));
+    carregarDados();
 }
+
+window.onload = carregarDados;
+
 </script>
 
 </body>
