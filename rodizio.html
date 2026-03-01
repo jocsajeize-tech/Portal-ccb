@@ -161,9 +161,12 @@ function gerar(){
         estat[nome] = (estat[nome]||0)+1;
 
         let chave = `${ano}-${mes}-${d}`;
-        let batismoTxt = batismos[chave] 
-          ? `<span class="batismo-text">BATISMO</span>` 
-          : "";
+
+        // 🔴 BATISMO SOMENTE EM CULTOS
+        let batismoTxt = "";
+        if(titulo === "CULTOS" && batismos[chave]){
+          batismoTxt = `<span class="batismo-text">BATISMO</span>`;
+        }
 
         html += `<tr>
           <td>${["DOM","SEG","TER","QUA","QUI","SEX","SAB"][data.getDay()]}</td>
@@ -187,7 +190,7 @@ function gerar(){
 
 function adicionarBatismo(){
   if(!monthPick.value) return alert("Escolha o mês");
-  let dia = prompt("Digite o dia do batismo:");
+  let dia = prompt("Digite o dia do batismo (somente culto):");
   if(!dia) return;
 
   const [ano,mes] = monthPick.value.split("-");
