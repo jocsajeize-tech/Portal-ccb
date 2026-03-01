@@ -16,7 +16,7 @@ h1 {
 }
 
 .container {
-    max-width: 900px;
+    max-width: 1000px;
     margin: auto;
 }
 
@@ -58,7 +58,7 @@ th {
 .batismo-box {
     background: #e9f2ff;
     padding: 15px;
-    margin-top: 20px;
+    margin-top: 30px;
     border-radius: 10px;
 }
 </style>
@@ -71,43 +71,128 @@ th {
 <h1>RODÍZIO DE CULTOS</h1>
 
 <label><strong>Escolha a Igreja:</strong></label><br>
-<select id="igrejaSelect" onchange="carregarDados()">
+<select id="igrejaSelect" onchange="carregarTudo()">
     <option value="central">Central</option>
     <option value="alto">Alto da Boa Vista</option>
     <option value="outras">Outras Localidades</option>
 </select>
 
-<div class="batismo-box">
-    <h3>Adicionar Dia de Batismo</h3>
-    <input type="date" id="dataBatismo">
-    <button onclick="adicionarBatismo()">Adicionar</button>
-</div>
+<hr>
+
+<h2>Cultos</h2>
+
+<input type="date" id="dataCulto">
+<input type="text" id="responsavelCulto" placeholder="Nome do responsável">
+<button onclick="adicionarCulto()">Adicionar Culto</button>
 
 <table>
     <thead>
         <tr>
-            <th>Datas de Batismo</th>
+            <th>Data</th>
+            <th>Responsável</th>
             <th>Remover</th>
         </tr>
     </thead>
-    <tbody id="tabelaBatismo">
-    </tbody>
+    <tbody id="tabelaCultos"></tbody>
 </table>
+
+<div class="batismo-box">
+    <h2>Batismos</h2>
+    <input type="date" id="dataBatismo">
+    <button onclick="adicionarBatismo()">Adicionar Batismo</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Data de Batismo</th>
+                <th>Remover</th>
+            </tr>
+        </thead>
+        <tbody id="tabelaBatismo"></tbody>
+    </table>
+</div>
 
 </div>
 
 <script>
 
-function chaveAtual() {
+function chave(tipo) {
     const igreja = document.getElementById("igrejaSelect").value;
-    return "batismos_" + igreja;
+    return igreja + "_" + tipo;
 }
 
-function carregarDados() {
+/* ================= CULTOS ================= */
+
+function adicionarCulto() {
+    const data = document.getElementById("dataCulto").value;
+    const nome = document.getElementById("responsavelCulto").value;
+
+    if (!data || !nome) {
+        alert("Preencha todos os campos!");
+        return;
+    }
+
+    const dados = JSON.parse(localStorage.getItem(chave("cultos"))) || [];
+    dados.push({ data, nome });
+
+    localStorage.setItem(chave("cultos"), JSON.stringify(dados));
+
+    document.getElementById("dataCulto").value = "";
+    document.getElementById("responsavelCulto").value = "";
+
+    carregarCultos();
+}
+
+function carregarCultos() {
+    const tabela = document.getElementById("tabelaCultos");
+    tabela.innerHTML = "";
+
+    const dados = JSON.parse(localStorage.getItem(chave("cultos"))) || [];
+
+    dados.forEach((item, index) => {
+        const linha = tabela.insertRow();
+        linha.insertCell(0).innerText = item.data;
+        linha.insertCell(1).innerText = item.nome;
+
+        const btn = document.createElement("button");
+        btn.innerText = "Excluir";
+        btn.onclick = () => removerCulto(index);
+
+        linha.insertCell(2).appendChild(btn);
+    });
+}
+
+function removerCulto(index) {
+    const dados = JSON.parse(localStorage.getItem(chave("cultos"))) || [];
+    dados.splice(index, 1);
+    localStorage.setItem(chave("cultos"), JSON.stringify(dados));
+    carregarCultos();
+}
+
+/* ================= BATISMOS ================= */
+
+function adicionarBatismo() {
+    const data = document.getElementById("dataBatismo").value;
+
+    if (!data) {
+        alert("Escolha uma data!");
+        return;
+    }
+
+    const dados = JSON.parse(localStorage.getItem(chave("batismos"))) || [];
+    dados.push(data);
+
+    localStorage.setItem(chave("batismos"), JSON.stringify(dados));
+
+    document.getElementById("dataBatismo").value = "";
+    carregarBatismos();
+}
+
+function carregarBatismos() {
     const tabela = document.getElementById("tabelaBatismo");
     tabela.innerHTML = "";
 
-    const dados = JSON.parse(localStorage.getItem(chaveAtual())) || [];
+    const dados = JSON.parse(localStorage.getItem(chave("batismos"))) || [];
 
     dados.forEach((data, index) => {
         const linha = tabela.insertRow();
@@ -115,34 +200,27 @@ function carregarDados() {
 
         const btn = document.createElement("button");
         btn.innerText = "Excluir";
-        btn.onclick = function() {
-            removerBatismo(index);
-        };
+        btn.onclick = () => removerBatismo(index);
 
         linha.insertCell(1).appendChild(btn);
     });
 }
 
-function adicionarBatismo() {
-    const input = document.getElementById("dataBatismo");
-    if (!input.value) return alert("Escolha uma data!");
-
-    const dados = JSON.parse(localStorage.getItem(chaveAtual())) || [];
-    dados.push(input.value);
-
-    localStorage.setItem(chaveAtual(), JSON.stringify(dados));
-    input.value = "";
-    carregarDados();
-}
-
 function removerBatismo(index) {
-    const dados = JSON.parse(localStorage.getItem(chaveAtual())) || [];
+    const dados = JSON.parse(localStorage.getItem(chave("batismos"))) || [];
     dados.splice(index, 1);
-    localStorage.setItem(chaveAtual(), JSON.stringify(dados));
-    carregarDados();
+    localStorage.setItem(chave("batismos"), JSON.stringify(dados));
+    carregarBatismos();
 }
 
-window.onload = carregarDados;
+/* ================= GERAL ================= */
+
+function carregarTudo() {
+    carregarCultos();
+    carregarBatismos();
+}
+
+window.onload = carregarTudo;
 
 </script>
 
