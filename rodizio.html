@@ -3,213 +3,191 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Rodízio de Cultos — Sistema Completo</title>
+<title>Rodízio de Cultos</title>
 
 <style>
-:root{
-  --border:#7a7a7a;
-  --blue:#dbe7ff;
-  --orange:#f4e0c8;
-  --red:#f8d6d6;
-  --titlebar:#cfcfcf;
-}
-body{font-family:Arial;margin:0;background:#f7f7f7}
-.wrap{max-width:1100px;margin:18px auto;padding:16px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.06)}
-h1{text-align:center;margin:0 0 6px}
-.sub{text-align:center;margin-bottom:12px}
-.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
-input,button{padding:8px}
-button{cursor:pointer;border:1px solid #888;background:#eee}
-.btn-primary{background:#2e6be6;color:#fff;border-color:#2e6be6}
-.btn-pdf{background:#c62828;color:#fff;border-color:#b71c1c}
-.card{padding:12px;border:1px solid var(--border);margin-bottom:12px}
-textarea{width:100%;min-height:70px;margin-bottom:8px}
-.title-bar{text-align:center;padding:8px;border:1px solid var(--border);background:var(--titlebar);font-weight:bold;margin-top:20px}
+body{font-family:Arial;margin:0;background:#f4f4f4}
+.wrap{max-width:1100px;margin:20px auto;padding:20px;background:#fff}
+h1{text-align:center;margin-bottom:5px}
+.sub{text-align:center;margin-bottom:15px}
+.controls{text-align:center;margin-bottom:15px}
+input,button{padding:6px;margin:4px}
+button{cursor:pointer}
+.card{border:1px solid #ccc;padding:10px;margin-bottom:15px}
+textarea{width:100%;height:70px;margin-bottom:10px}
 table{width:100%;border-collapse:collapse;margin-bottom:20px}
-th,td{border:1px solid var(--border);padding:6px;text-align:center}
-th{background:#e6e6e6}
-.badge{padding:3px 6px;border-radius:6px;font-size:12px;font-weight:bold;color:#fff}
+th,td{border:1px solid #999;padding:6px;text-align:center}
+th{background:#eee}
+.title{background:#ddd;padding:6px;font-weight:bold;text-align:center;margin-top:20px}
 
-.batismo{background:#2e7d32}
-.santaceia{background:#6a1b9a}
-.especial{background:#ef6c00}
-.aviso{background:#c62828}
-
-.highlight{background:#fff8e1}
-
-.comentario-box{
-  padding:6px;
-  border-radius:6px;
-  font-weight:bold;
-  margin-top:4px;
-}
-
-.comentario-batismo{ background:#e8f5e9; color:#1b5e20; }
-.comentario-santaceia{ background:#f3e5f5; color:#4a148c; }
-.comentario-especial{ background:#fff3e0; color:#e65100; }
-.comentario-aviso{ background:#ffebee; color:#b71c1c; }
+/* Comentário realmente colorido */
+.comentario-batismo{background:#c8e6c9;color:#1b5e20;font-weight:bold}
+.comentario-santaceia{background:#e1bee7;color:#4a148c;font-weight:bold}
+.comentario-especial{background:#ffe0b2;color:#e65100;font-weight:bold}
+.comentario-aviso{background:#ffcdd2;color:#b71c1c;font-weight:bold}
 
 </style>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
 <div class="wrap">
-<h1>RODÍZIO MÊS DE <span id="previewMes"></span></h1>
+<h1>RODÍZIO MÊS DE <span id="mes"></span></h1>
 <div class="sub">Congregação Cristã no Brasil</div>
 
 <div class="controls">
-<label>Mês:</label>
-<input id="monthPick" type="month"/>
-<button id="btnGenerate" class="btn-primary">Gerar Rodízio</button>
-<button id="btnPDF" class="btn-pdf">Exportar PDF</button>
+<input type="month" id="monthPick">
+<button onclick="gerar()">Gerar</button>
 </div>
 
 <div class="card">
-<h3>Operadores (1 nome por linha)</h3>
-
-<strong>Cultos (Dom/Ter/Qui)</strong>
-<textarea id="opsCulto"></textarea>
+<strong>Cultos</strong>
+<textarea id="culto"></textarea>
 
 <strong>Reunião Jovens</strong>
-<textarea id="opsReuniao"></textarea>
+<textarea id="reuniao"></textarea>
 
 <strong>Ensaio</strong>
-<textarea id="opsEnsaio"></textarea>
+<textarea id="ensaio"></textarea>
 
 <strong>Culto Jovens</strong>
-<textarea id="opsCultoJovem"></textarea>
+<textarea id="cultojovem"></textarea>
 </div>
 
-<div id="resultArea"></div>
+<div id="resultado"></div>
 </div>
 
 <script>
-const monthShort=['jan.','fev.','mar.','abr.','mai.','jun.','jul.','ago.','set.','out.','nov.','dez.'];
-const dayName=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const meses=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+const dias=['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
 
-function daysInMonth(y,m){return new Date(y,m+1,0).getDate();}
-function fmtShort(dt){return dt.getDate()+'-'+monthShort[dt.getMonth()];}
-function parseArea(t){return t.split('\n').map(s=>s.trim()).filter(Boolean);}
-function nthWeekday(y,m,w,n){let c=0;for(let d=1;d<=daysInMonth(y,m);d++){let dt=new Date(y,m,d);if(dt.getDay()==w){c++;if(c==n)return dt}}return null;}
-function allWeekdays(y,m,wanted){let a=[];for(let d=1;d<=daysInMonth(y,m);d++){let dt=new Date(y,m,d);if(wanted.includes(dt.getDay()))a.push(dt)}return a;}
-
-function getBadge(tipo){
-if(tipo==="Batismo") return {badge:'<span class="badge batismo">BATISMO</span>',classe:'comentario-batismo'};
-if(tipo==="Santa Ceia") return {badge:'<span class="badge santaceia">SANTA CEIA</span>',classe:'comentario-santaceia'};
-if(tipo==="Especial") return {badge:'<span class="badge especial">ESPECIAL</span>',classe:'comentario-especial'};
-if(tipo==="Aviso") return {badge:'<span class="badge aviso">AVISO</span>',classe:'comentario-aviso'};
-return {badge:'',classe:''};
+function diasNoMes(ano,mes){
+return new Date(ano,mes+1,0).getDate();
 }
 
-function sectionHTML(title,color,rows,tipo){
-let hasComment=false;
-rows.forEach(r=>{
-let key=tipo+"_"+r.data+"_"+document.getElementById('monthPick').value;
-if(localStorage.getItem(key)) hasComment=true;
-});
+function pegarLista(id){
+let lista=document.getElementById(id).value.split('\n').map(x=>x.trim()).filter(x=>x);
+return lista.length?lista:["-"];
+}
 
-let html=`<div class="title-bar" style="background:${color}">${title}</div>`;
-html+=`<table><tr><th>DIA</th><th>DATA</th><th>IRMÃO</th>`;
-if(hasComment) html+=`<th>OBSERVAÇÃO</th>`;
-html+=`<th>AÇÃO</th></tr>`;
+function gerar(){
 
-rows.forEach(r=>{
-let key=tipo+"_"+r.data+"_"+document.getElementById('monthPick').value;
-let dataObj=JSON.parse(localStorage.getItem(key)||"null");
-let rowClass=dataObj?"highlight":"";
+let valor=document.getElementById("monthPick").value;
+if(!valor){alert("Escolha o mês");return;}
 
-html+=`<tr class="${rowClass}">`;
-html+=`<td>${r.dia}</td>`;
-html+=`<td>${r.data}</td>`;
-html+=`<td>${r.irmao}</td>`;
+let [ano,mes]=valor.split("-");
+mes=parseInt(mes)-1;
 
-if(hasComment){
-if(dataObj){
-let info=getBadge(dataObj.tipo);
-html+=`<td>
-⚠️ ${info.badge}
-<div class="comentario-box ${info.classe}">
-${dataObj.texto}
-</div>
-</td>`;
-}else{
-html+=`<td></td>`;
+document.getElementById("mes").innerText=meses[mes]+" - "+ano;
+
+let culto=pegarLista("culto");
+let reuniao=pegarLista("reuniao");
+let ensaio=pegarLista("ensaio");
+let cultojovem=pegarLista("cultojovem");
+
+let html="";
+
+html+=montarTabela("CULTOS",[0,2,4],culto,"culto",ano,mes);
+html+=montarTabela("REUNIÃO JOVENS",[0],reuniao,"reuniao",ano,mes);
+html+=montarUnico("ENSAIO",5,2,ensaio,"ensaio",ano,mes);
+html+=montarUnico("CULTO JOVENS",6,2,cultojovem,"cultojovem",ano,mes);
+
+document.getElementById("resultado").innerHTML=html;
+}
+
+function montarTabela(titulo,diasSemana,lista,tipo,ano,mes){
+
+let html=`<div class="title">${titulo}</div>`;
+html+="<table><tr><th>Dia</th><th>Data</th><th>Irmão</th><th>Obs</th><th>Ação</th></tr>";
+
+let contador=0;
+
+for(let d=1; d<=diasNoMes(ano,mes); d++){
+let data=new Date(ano,mes,d);
+if(diasSemana.includes(data.getDay())){
+
+let chave=tipo+"_"+d+"_"+mes+"_"+ano;
+let comentario=JSON.parse(localStorage.getItem(chave)||"null");
+
+let classe="";
+if(comentario){
+if(comentario.tipo==="Batismo") classe="comentario-batismo";
+if(comentario.tipo==="Santa Ceia") classe="comentario-santaceia";
+if(comentario.tipo==="Especial") classe="comentario-especial";
+if(comentario.tipo==="Aviso") classe="comentario-aviso";
+}
+
+html+=`<tr>
+<td>${dias[data.getDay()]}</td>
+<td>${d}</td>
+<td>${lista[contador%lista.length]}</td>
+<td class="${classe}">${comentario?comentario.texto:""}</td>
+<td><button onclick="editar('${chave}')">Comentar</button></td>
+</tr>`;
+
+contador++;
 }
 }
 
-html+=`<td><button onclick="editarComentario('${key}')">Comentar</button></td>`;
-html+=`</tr>`;
-});
-
-html+=`</table>`;
+html+="</table>";
 return html;
 }
 
-function editarComentario(key){
-let atual=JSON.parse(localStorage.getItem(key)||"null");
+function montarUnico(titulo,diaSemana,ordem,lista,tipo,ano,mes){
 
-let tipo=prompt("Tipo (Batismo, Santa Ceia, Especial, Aviso):", atual?atual.tipo:"");
-if(tipo===null) return;
+let html=`<div class="title">${titulo}</div>`;
+html+="<table><tr><th>Dia</th><th>Data</th><th>Irmão</th><th>Obs</th><th>Ação</th></tr>";
 
-let texto=prompt("Descrição:", atual?atual.texto:"");
-if(texto===null) return;
+let count=0;
+let alvo=null;
+
+for(let d=1; d<=diasNoMes(ano,mes); d++){
+let data=new Date(ano,mes,d);
+if(data.getDay()===diaSemana){
+count++;
+if(count===ordem){alvo=d;break;}
+}
+}
+
+if(alvo){
+let chave=tipo+"_"+alvo+"_"+mes+"_"+ano;
+let comentario=JSON.parse(localStorage.getItem(chave)||"null");
+
+let classe="";
+if(comentario){
+if(comentario.tipo==="Batismo") classe="comentario-batismo";
+if(comentario.tipo==="Santa Ceia") classe="comentario-santaceia";
+if(comentario.tipo==="Especial") classe="comentario-especial";
+if(comentario.tipo==="Aviso") classe="comentario-aviso";
+}
+
+html+=`<tr>
+<td>${dias[diaSemana]}</td>
+<td>${alvo}</td>
+<td>${lista[0]}</td>
+<td class="${classe}">${comentario?comentario.texto:""}</td>
+<td><button onclick="editar('${chave}')">Comentar</button></td>
+</tr>`;
+}
+
+html+="</table>";
+return html;
+}
+
+function editar(chave){
+let tipo=prompt("Tipo (Batismo, Santa Ceia, Especial, Aviso):");
+if(tipo===null)return;
+
+let texto=prompt("Descrição:");
+if(texto===null)return;
 
 if(texto.trim()===""){
-localStorage.removeItem(key);
+localStorage.removeItem(chave);
 }else{
-localStorage.setItem(key,JSON.stringify({tipo:tipo,texto:texto}));
+localStorage.setItem(chave,JSON.stringify({tipo:tipo,texto:texto}));
 }
-gerarRodizio();
-}
-
-function gerarRodizio(){
-const val=document.getElementById('monthPick').value;
-if(!val) return alert("Selecione o mês");
-const [y,m]=val.split('-').map(Number);
-const mi=m-1;
-document.getElementById('previewMes').textContent=monthShort[mi].toUpperCase()+" - "+y;
-
-const opsCulto=parseArea(document.getElementById('opsCulto').value);
-const opsReuniao=parseArea(document.getElementById('opsReuniao').value);
-const opsEnsaio=parseArea(document.getElementById('opsEnsaio').value);
-const opsCultoJov=parseArea(document.getElementById('opsCultoJovem').value);
-
-let pC=0,pR=0,pE=0,pJ=0;
-
-const cultoRows=allWeekdays(y,mi,[0,2,4]).map(dt=>({dia:dayName[dt.getDay()],data:fmtShort(dt),irmao:opsCulto[pC++%opsCulto.length||1]}));
-const reuniaoRows=allWeekdays(y,mi,[0]).map(dt=>({dia:dayName[dt.getDay()],data:fmtShort(dt),irmao:opsReuniao[pR++%opsReuniao.length||1]}));
-const dt2sexta=nthWeekday(y,mi,5,2);
-const ensaioRows=dt2sexta?[{dia:dayName[dt2sexta.getDay()],data:fmtShort(dt2sexta),irmao:opsEnsaio[pE%opsEnsaio.length||1]}]:[];
-const dt2sab=nthWeekday(y,mi,6,2);
-const cultoJovRows=dt2sab?[{dia:dayName[dt2sab.getDay()],data:fmtShort(dt2sab),irmao:opsCultoJov[pJ%opsCultoJov.length||1]}]:[];
-
-let out='';
-out+=sectionHTML('CULTOS','#e6e6e6',cultoRows,'culto');
-out+=sectionHTML('REUNIÃO DE JOVENS','#dbe7ff',reuniaoRows,'reuniao');
-out+=sectionHTML('ENSAIO','#f4e0c8',ensaioRows,'ensaio');
-out+=sectionHTML('CULTO DE JOVENS','#f8d6d6',cultoJovRows,'cultojovem');
-
-document.getElementById('resultArea').innerHTML=out;
+gerar();
 }
 
-document.getElementById("btnPDF").addEventListener("click",()=>{
-html2pdf().set({
-margin:10,
-filename:`Rodizio-${document.getElementById('previewMes').textContent}.pdf`,
-html2canvas:{scale:2},
-jsPDF:{unit:'mm',format:'a4'}
-}).from(document.getElementById("resultArea")).save();
-});
-
-const now=new Date();
-document.getElementById('monthPick').value=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,'0');
-document.getElementById('previewMes').textContent=monthShort[now.getMonth()].toUpperCase()+" - "+now.getFullYear();
-
-document.getElementById('btnGenerate').addEventListener('click',gerarRodizio);
-gerarRodizio();
 </script>
-
 </body>
 </html>
