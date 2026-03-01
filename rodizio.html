@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Rodízio Mensal - CCB</title>
+<title>Rodízio - Central</title>
 
 <style>
 body{
@@ -94,7 +94,7 @@ tr:nth-child(even){
 
 <div class="wrap">
 
-<h1>RODÍZIO MENSAL — CCB</h1>
+<h1>RODÍZIO MENSAL — CENTRAL</h1>
 
 <div class="controls">
 <input type="month" id="monthPick">
@@ -116,11 +116,13 @@ tr:nth-child(even){
 </div>
 
 <script>
+const STORAGE_KEY = "rodizio_central_batismos";
+
 const tabelasDiv = document.getElementById("tabelas");
 const statsDiv = document.getElementById("estatisticas");
 const monthPick = document.getElementById("monthPick");
 
-let batismos = JSON.parse(localStorage.getItem("batismos") || "{}");
+let batismos = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 
 function parseLista(text){
   return text.split("\n").map(x=>x.trim()).filter(x=>x);
@@ -159,7 +161,6 @@ function gerar(){
         estat[nome] = (estat[nome]||0)+1;
 
         let chave = `${ano}-${mes}-${d}`;
-
         let batismoTxt = batismos[chave] 
           ? `<span class="batismo-text">BATISMO</span>` 
           : "";
@@ -194,7 +195,7 @@ function adicionarBatismo(){
   let chave = `${ano}-${Number(mes)}-${Number(dia)}`;
 
   batismos[chave]=true;
-  localStorage.setItem("batismos",JSON.stringify(batismos));
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(batismos));
 
   gerar();
 }
@@ -209,7 +210,7 @@ function removerBatismo(){
   let chave = `${ano}-${Number(mes)}-${Number(dia)}`;
 
   delete batismos[chave];
-  localStorage.setItem("batismos",JSON.stringify(batismos));
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(batismos));
 
   gerar();
 }
