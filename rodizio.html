@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Rodízio de Cultos — Gerador Automático</title>
+<title>Rodízio de Cultos — Sequência Contínua</title>
 
 <style>
   :root{
@@ -68,24 +68,23 @@
 
   <div class="panel">
     <div class="card">
-      <h3>Operadores — cada nome em uma linha</h3>
+      <h3>Operadores — Sequência Base (Ordem da Fila)</h3>
 
       <label><strong>Culto (Dom / Ter / Qui)</strong></label>
-      <textarea id="opsCulto" class="oper">ABIMAEL
+      <textarea id="opsCulto" class="oper">CESA
+ROMULO
 DANIEL
-FABIO
-JONATAS</textarea>
+FABIO</textarea>
 
       <label><strong>Reunião de Jovens (Todos os domingos)</strong></label>
-      <textarea id="opsReuniao" class="oper">ABIMAEL
-DANIEL FEIRA NOVA</textarea>
+      <textarea id="opsReuniao" class="oper">DANIEL F.N
+JONATAS</textarea>
 
       <label><strong>Ensaio Local</strong></label>
       <textarea id="opsEnsaio" class="oper">JONATAS</textarea>
 
       <label><strong>Culto de Jovens</strong></label>
       <textarea id="opsCultoJovem" class="oper">FABIO</textarea>
-
     </div>
   </div>
 
@@ -93,11 +92,15 @@ DANIEL FEIRA NOVA</textarea>
 </div>
 
 <script>
-const monthShort = ['JAN.','FEV.','MAR.','ABR.','MAI.','JUN.','JUL.','AGO.','SET.','OUT.','NOV.','DEZ.'];
-const dayName = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+const monthShort = ['JAN.','FEV.','MAR.','ABR.','MAI.','JUN.','JUL.','AGO.SET.','OUT.','NOV.','DEZ.'];
+const dayName = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 
 const SEMANA_ENSAIO = 2;      
 const SEMANA_CULTO_JOVEM = 2; 
+
+// Ano e Mês de referência (Junho de 2026 baseado na sua imagem)
+const REF_YEAR = 2026;
+const REF_MONTH = 5; // Junho é índice 5 (0 = Jan, 1 = Fev...)
 
 function daysInMonth(year, mIdx){ return new Date(year, mIdx+1, 0).getDate(); }
 function fmtShort(dt){ return dt.getDate() + '-' + monthShort[dt.getMonth()].toLowerCase(); }
@@ -125,66 +128,90 @@ function allWeekdays(year, monthIdx, wanted){
 
 function parseArea(text){ return text.split('\n').map(s=>s.trim()).filter(s=>s.length>0); }
 
-// Retorna os nomes salvos no navegador (caso o usuário mude os digitados)
-function loadSavedNames() {
-  if(localStorage.getItem('opsCulto')) document.getElementById('opsCulto').value = localStorage.getItem('opsCulto');
-  if(localStorage.getItem('opsReuniao')) document.getElementById('opsReuniao').value = localStorage.getItem('opsReuniao');
-  if(localStorage.getItem('opsEnsaio')) document.getElementById('opsEnsaio').value = localStorage.getItem('opsEnsaio');
-  if(localStorage.getItem('opsCultoJovem')) document.getElementById('opsCultoJovem').value = localStorage.getItem('opsCultoJovem');
-}
-
-function saveNames() {
-  localStorage.setItem('opsCulto', document.getElementById('opsCulto').value);
-  localStorage.setItem('opsReuniao', document.getElementById('opsReuniao').value);
-  localStorage.setItem('opsEnsaio', document.getElementById('opsEnsaio').value);
-  localStorage.setItem('opsCultoJovem', document.getElementById('opsCultoJovem').value);
-}
-
-// 🔀 Algoritmo Psico-aleatório: Embaralha a lista baseado no Ano e Mês selecionado.
-// Isso garante que a sequência mude todo mês, mas se você reabrir o mesmo mês, os dados continuam iguais.
-function shuffleListByMonth(array, year, monthIdx) {
-  let shuffled = [...array];
-  let seed = year + monthIdx; 
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const x = Math.sin(seed++) * 10000;
-    const j = Math.floor((x - Math.floor(x)) * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+// Conta quantos eventos de determinados dias da semana aconteceram cumulativamente desde a data de referência
+function countEventsSinceRef(targetYear, targetMonth, wantedDays) {
+  let totalEvents = 0;
+  
+  // Se o usuário escolher um mês anterior à referência, calculamos de forma reversa
+  if (targetYear < REF_YEAR || (targetYear === REF_YEAR && targetMonth < REF_MONTH)) {
+    let currentY = targetYear;
+    let currentM = targetMonth;
+    while (currentY < REF_YEAR || currentM < REF_MONTH) {
+      totalEvents -= allWeekdays(currentY, currentM, wantedDays).length;
+      currentM++;
+      if (currentM > 11) { currentM = 0; currentY++; }
+    }
+    return totalEvents;
   }
-  return shuffled;
+  
+  // Caso comum: Meses futuros após Junho de 2026
+  let currentY = REF_YEAR;
+  let currentM = REF_MONTH;
+  while (currentY < targetYear || currentM < targetMonth) {
+    totalEvents += allWeekdays(currentY, currentM, wantedDays).length;
+    currentM++;
+    if (currentM > 11) { currentM = 0; currentY++; }
+  }
+  return totalEvents;
+}
+
+// Conta a quantidade de eventos pontuais mensais (como ensaios ou culto de jovens) ocorridos até o mês alvo
+function countMonthlyEventsSinceRef(targetYear, targetMonth, weekday, nthWeek) {
+  let totalEvents = 0;
+  
+  if (targetYear < REF_YEAR || (targetYear === REF_YEAR && targetMonth < REF_MONTH)) {
+    let currentY = targetYear;
+    let currentM = targetMonth;
+    while (currentY < REF_YEAR || currentM < REF_MONTH) {
+      if (nthWeekday(currentY, currentM, weekday, nthWeek)) totalEvents--;
+      currentM++;
+      if (currentM > 11) { currentM = 0; currentY++; }
+    }
+    return totalEvents;
+  }
+
+  let currentY = REF_YEAR;
+  let currentM = REF_MONTH;
+  while (currentY < targetYear || currentM < targetMonth) {
+    if (nthWeekday(currentY, currentM, weekday, nthWeek)) totalEvents++;
+    currentM++;
+    if (currentM > 11) { currentM = 0; currentY++; }
+  }
+  return totalEvents;
 }
 
 function sectionHTML(title, color, rows){
   if (rows.length === 0) return ''; 
   let html = `<div class="title-bar" style="background:${color}">${title}</div>`;
   html += `<table class="sheet"><tr><th style="width: 30%;">DIA</th><th style="width: 25%;">DATA</th><th>IRMÃO</th></tr>`;
-  rows.forEach(r => html += `<tr><td>${r.dia}</td><td>${r.data}</td><td><strong>${r.irmao}</strong></td></tr>`);
+  rows.forEach(r => html += `<tr><td>${r.dia}</td><td>${r.data}</td><td>${r.irmao}</td></tr>`);
   html += `</table>`;
   return html;
 }
 
 function gerarRodizio(){
-  saveNames(); // Salva os nomes digitados atualizados
-  
   const monthVal = document.getElementById('monthPick').value;
   if(!monthVal) return alert('Selecione o mês.');
   const [y,m] = monthVal.split('-').map(Number);
   const mi = m - 1;
   document.getElementById('previewMes').textContent = monthShort[mi] + ' - ' + y;
 
-  // Carrega e gera listas únicas rotativas para o mês corrente baseado no embaralhamento matemático
-  const opsCulto = shuffleListByMonth(parseArea(document.getElementById('opsCulto').value), y, mi);
-  const opsReuniao = shuffleListByMonth(parseArea(document.getElementById('opsReuniao').value), y, mi + 1); // Diferencia semente
-  const opsEnsaio = shuffleListByMonth(parseArea(document.getElementById('opsEnsaio').value), y, mi + 2);
-  const opsCultoJov = shuffleListByMonth(parseArea(document.getElementById('opsCultoJovem').value), y, mi + 3);
+  const opsCulto = parseArea(document.getElementById('opsCulto').value);
+  const opsReuniao = parseArea(document.getElementById('opsReuniao').value);
+  const opsEnsaio = parseArea(document.getElementById('opsEnsaio').value);
+  const opsCultoJov = parseArea(document.getElementById('opsCultoJovem').value);
 
   if([opsCulto, opsReuniao, opsEnsaio, opsCultoJov].some(arr => arr.length === 0)){
-    alert("Por favor, preencha pelo menos um nome em cada lista de operadores.");
+    alert("Por favor, garanta que há nomes preenchidos nos campos.");
     return;
   }
 
-  let pC=0, pR=0, pE=0, pJ=0;
+  // 1. CULTOS OFICIAIS (Dom, Ter, Qui)
+  // Descobre quantos cultos se passaram desde Junho para achar o ponto de início (ponteiro) exato
+  let cultosPassados = countEventsSinceRef(y, mi, [0, 2, 4]);
+  // Correção matemática para lidar com resíduos negativos se consultarem meses passados
+  let pC = (cultosPassados % opsCulto.length + opsCulto.length) % opsCulto.length;
 
-  // Cultos oficiais
   const cultoDates = allWeekdays(y, mi, [0,2,4]);
   const cultoRows = cultoDates.map(dt => ({
     dia: dayName[dt.getDay()],
@@ -192,7 +219,10 @@ function gerarRodizio(){
     irmao: opsCulto[pC++ % opsCulto.length]
   }));
 
-  // Reunião de Jovens
+  // 2. REUNIÃO DE JOVENS (Todos os domingos)
+  let reunioesPassadas = countEventsSinceRef(y, mi, [0]);
+  let pR = (reunioesPassadas % opsReuniao.length + opsReuniao.length) % opsReuniao.length;
+
   const doms = allWeekdays(y, mi, [0]);
   const reuniaoRows = doms.map(dt => ({
     dia: dayName[dt.getDay()],
@@ -200,7 +230,10 @@ function gerarRodizio(){
     irmao: opsReuniao[pR++ % opsReuniao.length]
   }));
 
-  // Ensaio Local
+  // 3. ENSAIO LOCAL (2ª Sexta-feira do mês)
+  let ensaiosPassados = countMonthlyEventsSinceRef(y, mi, 5, SEMANA_ENSAIO);
+  let pE = (ensaiosPassados % opsEnsaio.length + opsEnsaio.length) % opsEnsaio.length;
+
   const dtSexta = nthWeekday(y, mi, 5, SEMANA_ENSAIO);
   const ensaioRows = dtSexta ? [{
     dia: dayName[dtSexta.getDay()],
@@ -208,7 +241,12 @@ function gerarRodizio(){
     irmao: opsEnsaio[pE++ % opsEnsaio.length]
   }] : [];
 
-  // Culto de Jovens
+  // 4. CULTO DE JOVENS (2º Sábado do mês)
+  let cultosJovensPassados = countMonthlyEventsSinceRef(y, mi, 6, SEMANA_CULTO_JOVEM);
+  let pJ = (cultosJovensPassados % opsCultoJov.length + opsCultoJov.length) % opsCultovJov.length;
+  // Correção de digitação interna para garantir leitura estável
+  if(isNaN(pJ)) pJ = (cultosJovensPassados % opsCultoJov.length + opsCultoJov.length) % opsCultoJov.length;
+
   const dtSab = nthWeekday(y, mi, 6, SEMANA_CULTO_JOVEM);
   const cultoJovRows = dtSab ? [{
     dia: dayName[dtSab.getDay()],
@@ -217,10 +255,10 @@ function gerarRodizio(){
   }] : [];
 
   let out = '';
-  out += sectionHTML('CULTOS OFICIAIS:', '#e6e6e6', cultoRows);
-  out += sectionHTML('REUNIÃO DE JOVENS E MENORES:', 'var(--blue)', reuniaoRows);
-  out += sectionHTML('ENSAIO LOCAL:', 'var(--orange)', ensaioRows);
-  out += sectionHTML('CULTO DE JOVENS E MENORES:', 'var(--red)', cultoJovRows);
+  out += sectionHTML('CULTOS:', '#e6e6e6', cultoRows);
+  out += sectionHTML('REUNIÃO DE JOVENS:', 'var(--blue)', reuniaoRows);
+  out += sectionHTML('ENSAIO:', 'var(--orange)', ensaioRows);
+  out += sectionHTML('CULTO DE JOVENS:', 'var(--red)', cultoJovRows);
 
   document.getElementById('resultArea').innerHTML = out;
 }
@@ -240,14 +278,10 @@ document.getElementById("btnPDF").addEventListener("click", () => {
   html2pdf().set(opt).from(area).save();
 });
 
-// Inicialização segura carregando dados armazenados
-loadSavedNames();
-
+// Inicialização focada no mês atual do calendário do usuário
 const now = new Date();
 document.getElementById('monthPick').value =
   now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
-document.getElementById('previewMes').textContent =
-  monthShort[now.getMonth()] + ' - ' + now.getFullYear();
 
 document.getElementById('btnGenerate').addEventListener('click', gerarRodizio);
 gerarRodizio();
