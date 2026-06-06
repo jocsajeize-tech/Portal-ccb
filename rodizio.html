@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Rodízio de Cultos — Sequência Contínua</title>
+<title>Rodízio de Cultos — Sequência Dinâmica</title>
 
 <style>
   :root{
@@ -19,7 +19,7 @@
     font-family: Arial, sans-serif;
     margin:0; background:#f7f7f7; color:#111;
   }
-  .wrap{max-width:1100px;margin:18px auto;padding:16px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  .wrap{max-width:1100px;margin:18px auto;padding:166px;padding:16px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.06)}
   h1{font-size:28px;margin:0 0 6px;text-align:center}
   .sub{ text-align:center;color:#333;margin-bottom:12px }
 
@@ -30,7 +30,6 @@
   .btn-pdf{background:#c62828;color:#fff;border-color:#b71c1c}
   .btn-lock{background:#f0a500;color:#fff;border-color:#d49200;font-weight:bold}
 
-  /* Painel de editores escondido por padrão */
   #painelEditores {
     display: none;
     margin-bottom: 12px;
@@ -87,7 +86,7 @@
   <div id="painelEditores">
     <div class="panel">
       <div class="card">
-        <h3>Operadores — Sequência Base (Ordem da Fila)</h3>
+        <h3>Operadores — Lista Ativa Atual</h3>
 
         <label><strong>Culto (Dom / Ter / Qui)</strong></label>
         <textarea id="opsCulto" class="oper">CESA
@@ -117,23 +116,15 @@ const dayName = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta
 
 const SEMANA_ENSAIO = 2;      
 const SEMANA_CULTO_JOVEM = 2; 
-
-// 🔑 CONFIGURAÇÃO DA SENHA (Mude aqui se quiser)
 const SENHA_CORRETA = "1234";
-
-// Mês base fixado em Junho de 2026 para cálculo de transições
-const REF_YEAR = 2026;
-const REF_MONTH = 5; 
 
 function daysInMonth(year, mIdx){ return new Date(year, mIdx+1, 0).getDate(); }
 function fmtShort(dt){ return dt.getDate() + '-' + monthShort[dt.getMonth()].toLowerCase(); }
 
-// Função que valida a senha para mostrar/esconder o painel de configuração
 function verificarSenha() {
   const painel = document.getElementById('painelEditores');
   const botao = document.getElementById('btnLock');
 
-  // Se já estiver aberto, o botão fecha o painel voluntariamente
   if (painel.style.display === "block") {
     painel.style.display = "none";
     botao.textContent = "🔓 Editar Operadores";
@@ -141,7 +132,6 @@ function verificarSenha() {
   }
 
   const senhaDigitada = prompt("Digite a senha de administrador para modificar as listas:");
-  
   if (senhaDigitada === SENHA_CORRETA) {
     painel.style.display = "block";
     botao.textContent = "🔒 Fechar Editor";
@@ -154,10 +144,7 @@ function nthWeekday(year, monthIdx, weekday, n){
   let count=0;
   for(let d=1; d<=daysInMonth(year, monthIdx); d++){
     const dt = new Date(year, monthIdx, d, 12, 0, 0);
-    if(dt.getDay()===weekday){ 
-      count++; 
-      if(count===n) return dt; 
-    }
+    if(dt.getDay()===weekday){ count++; if(count===n) return dt; }
   }
   return null;
 }
@@ -173,10 +160,11 @@ function allWeekdays(year, monthIdx, wanted){
 
 function parseArea(text){ return text.split('\n').map(s=>s.trim()).filter(s=>s.length>0); }
 
-function countEventsSinceRef(targetYear, targetMonth, wantedDays) {
+// Conta quantos eventos se passaram entre duas datas quaisquer de forma precisa
+function countEventsBetween(startYear, startMonth, endYear, endMonth, wantedDays) {
   let totalEvents = 0;
-  let start = new Date(REF_YEAR, REF_MONTH, 1, 12, 0, 0);
-  let end = new Date(targetYear, targetMonth, 1, 12, 0, 0);
+  let start = new Date(startYear, startMonth, 1, 12, 0, 0);
+  let end = new Date(endYear, endMonth, 1, 12, 0, 0);
   
   if (start.getTime() === end.getTime()) return 0;
   
@@ -197,10 +185,10 @@ function countEventsSinceRef(targetYear, targetMonth, wantedDays) {
   }
 }
 
-function countMonthlyEventsSinceRef(targetYear, targetMonth, weekday, nthWeek) {
+function countMonthlyEventsBetween(startYear, startMonth, endYear, endMonth, weekday, nthWeek) {
   let totalEvents = 0;
-  let start = new Date(REF_YEAR, REF_MONTH, 1, 12, 0, 0);
-  let end = new Date(targetYear, targetMonth, 1, 12, 0, 0);
+  let start = new Date(startYear, startMonth, 1, 12, 0, 0);
+  let end = new Date(endYear, endMonth, 1, 12, 0, 0);
   
   if (start.getTime() === end.getTime()) return 0;
   
@@ -230,65 +218,106 @@ function sectionHTML(title, color, rows){
   return html;
 }
 
-function gerarRodizio(){
+// Inicializa ou resgata os dados da última edição salva
+function obterDadosReferencia() {
+  const refSalva = localStorage.getItem('ccb_ref_data');
+  if (refSalva) {
+    return JSON.parse(refSalva);
+  }
+  // Padrão inicial: Junho de 2026
+  return {
+    year: 2026,
+    month: 5, 
+    opsCulto: ["CESA", "ROMULO", "DANIEL", "FABIO"],
+    opsReuniao: ["DANIEL F.N", "JONATAS"],
+    opsEnsaio: ["JONATAS"],
+    opsCultoJovem: ["FABIO"]
+  };
+}
+
+function carregarCamposInterface() {
+  const dados = obterDadosReferencia();
+  document.getElementById('opsCulto').value = dados.opsCulto.join('\n');
+  document.getElementById('opsReuniao').value = dados.opsReuniao.join('\n');
+  document.getElementById('opsEnsaio').value = dados.opsEnsaio.join('\n');
+  document.getElementById('opsCultoJovem').value = dados.opsCultoJovem.join('\n');
+}
+
+function gerenciarMudancaEdicao(anoAlvo, mesAlvo) {
+  // Se as caixas estiverem abertas, significa que o usuário alterou dados. Salvamos como nova referência!
+  if (document.getElementById('painelEditores').style.display === "block" || !localStorage.getItem('ccb_ref_data')) {
+    const novaRef = {
+      year: anoAlvo,
+      month: mesAlvo,
+      opsCulto: parseArea(document.getElementById('opsCulto').value),
+      opsReuniao: parseArea(document.getElementById('opsReuniao').value),
+      opsEnsaio: parseArea(document.getElementById('opsEnsaio').value),
+      opsCultoJovem: parseArea(document.getElementById('opsCultoJovem').value)
+    };
+    localStorage.setItem('ccb_ref_data', JSON.stringify(novaRef));
+  }
+}
+
+function gerarRodizio() {
   const monthVal = document.getElementById('monthPick').value;
   if(!monthVal) return alert('Selecione o mês.');
-  const [y,m] = monthVal.split('-').map(Number);
+  const [y, m] = monthVal.split('-').map(Number);
   const mi = m - 1;
+
+  // 1. Salva a edição se o painel estiver aberto na tela antes de processar
+  gerenciarMudancaEdicao(y, mi);
+
+  // 2. Busca de onde deve partir o cálculo (Mês da última modificação)
+  const ref = obterDadosReferencia();
   document.getElementById('previewMes').textContent = monthShort[mi] + ' - ' + y;
 
-  const opsCulto = parseArea(document.getElementById('opsCulto').value);
-  const opsReuniao = parseArea(document.getElementById('opsReuniao').value);
-  const opsEnsaio = parseArea(document.getElementById('opsEnsaio').value);
-  const opsCultoJov = parseArea(document.getElementById('opsCultoJovem').value);
-
-  if([opsCulto, opsReuniao, opsEnsaio, opsCultoJov].some(arr => arr.length === 0)){
-    alert("Por favor, garanta que há nomes preenchidos nos campos.");
+  if([ref.opsCulto, ref.opsReuniao, ref.opsEnsaio, ref.opsCultoJovem].some(arr => arr.length === 0)){
+    alert("As listas não podem ficar vazias.");
     return;
   }
 
-  // 1. CULTOS OFICIAIS
-  let cultosPassados = countEventsSinceRef(y, mi, [0, 2, 4]);
-  let pC = (cultosPassados % opsCulto.length + opsCulto.length) % opsCulto.length;
+  // 3. CULTOS OFICIAIS (Calcula a distância partindo estritamente da última edição efetuada)
+  let cultosPassados = countEventsBetween(ref.year, ref.month, y, mi, [0, 2, 4]);
+  let pC = (cultosPassados % ref.opsCulto.length + ref.opsCulto.length) % ref.opsCulto.length;
 
   const cultoDates = allWeekdays(y, mi, [0,2,4]);
   const cultoRows = cultoDates.map(dt => ({
     dia: dayName[dt.getDay()],
     data: fmtShort(dt),
-    irmao: opsCulto[pC++ % opsCulto.length]
+    irmao: ref.opsCulto[pC++ % ref.opsCulto.length]
   }));
 
-  // 2. REUNIÃO DE JOVENS
-  let reunioesPassadas = countEventsSinceRef(y, mi, [0]);
-  let pR = (reunioesPassadas % opsReuniao.length + opsReuniao.length) % opsReuniao.length;
+  // 4. REUNIÃO DE JOVENS
+  let reunioesPassadas = countEventsBetween(ref.year, ref.month, y, mi, [0]);
+  let pR = (reunioesPassadas % ref.opsReuniao.length + ref.opsReuniao.length) % ref.opsReuniao.length;
 
   const doms = allWeekdays(y, mi, [0]);
   const reuniaoRows = doms.map(dt => ({
     dia: dayName[dt.getDay()],
     data: fmtShort(dt),
-    irmao: opsReuniao[pR++ % opsReuniao.length]
+    irmao: ref.opsReuniao[pR++ % ref.opsReuniao.length]
   }));
 
-  // 3. ENSAIO LOCAL
-  let ensaiosPassados = countMonthlyEventsSinceRef(y, mi, 5, SEMANA_ENSAIO);
-  let pE = (ensaiosPassados % opsEnsaio.length + opsEnsaio.length) % opsEnsaio.length;
+  // 5. ENSAIO LOCAL
+  let ensaiosPassados = countMonthlyEventsBetween(ref.year, ref.month, y, mi, 5, SEMANA_ENSAIO);
+  let pE = (ensaiosPassados % ref.opsEnsaio.length + ref.opsEnsaio.length) % ref.opsEnsaio.length;
 
   const dtSexta = nthWeekday(y, mi, 5, SEMANA_ENSAIO);
   const ensaioRows = dtSexta ? [{
     dia: dayName[dtSexta.getDay()],
     data: fmtShort(dtSexta),
-    irmao: opsEnsaio[pE++ % opsEnsaio.length]
+    irmao: ref.opsEnsaio[pE++ % ref.opsEnsaio.length]
   }] : [];
 
-  // 4. CULTO DE JOVENS
-  let cultosJovensPassados = countMonthlyEventsSinceRef(y, mi, 6, SEMANA_CULTO_JOVEM);
-  let pJ = (cultosJovensPassados % opsCultoJov.length + opsCultoJov.length) % opsCultoJov.length;
+  // 6. CULTO DE JOVENS
+  let cultosJovensPassados = countMonthlyEventsBetween(ref.year, ref.month, y, mi, 6, SEMANA_CULTO_JOVEM);
+  let pJ = (cultosJovensPassados % ref.opsCultoJovem.length + ref.opsCultoJovem.length) % ref.opsCultoJovem.length;
 
   const dtSab = nthWeekday(y, mi, 6, SEMANA_CULTO_JOVEM);
   const cultoJovRows = dtSab ? [{
     dia: dayName[dtSab.getDay()],
     data: fmtShort(dtSab),
-    irmao: opsCultoJov[pJ++ % opsCultoJov.length]
+    irmao: ref.opsCultoJovem[pJ++ % ref.opsCultoJovem.length]
   }] : [];
 
   let out = '';
@@ -303,7 +332,6 @@ function gerarRodizio(){
 document.getElementById("btnPDF").addEventListener("click", () => {
   const area = document.getElementById("resultArea");
   const mesTexto = document.getElementById('previewMes').textContent;
-
   const opt = {
     margin: 12,
     filename: `Rodizio_Cultos_${mesTexto}.pdf`,
@@ -311,14 +339,13 @@ document.getElementById("btnPDF").addEventListener("click", () => {
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
-
   html2pdf().set(opt).from(area).save();
 });
 
-// Inicialização automática
+// Inicialização Inteligente
+carregarCamposInterface();
 const now = new Date();
-document.getElementById('monthPick').value =
-  now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+document.getElementById('monthPick').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
 
 document.getElementById('btnGenerate').addEventListener('click', gerarRodizio);
 gerarRodizio();
