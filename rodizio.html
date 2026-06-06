@@ -28,13 +28,19 @@
   button{cursor:pointer;border:1px solid #888;background:#eee}
   .btn-primary{background:#2e6be6;color:#fff;border-color:#2e6be6}
   .btn-pdf{background:#c62828;color:#fff;border-color:#b71c1c}
+  .btn-lock{background:#f0a500;color:#fff;border-color:#d49200;font-weight:bold}
 
-  .panel{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+  /* Painel de editores escondido por padrão */
+  #painelEditores {
+    display: none;
+    margin-bottom: 12px;
+  }
+
+  .panel{display:flex;gap:16px;flex-wrap:wrap;}
   .card{flex:1 1 360px;padding:12px;border:1px solid var(--border);background: #fff}
   .card h3{margin:0 0 8px;font-size:16px}
   .card label {display:block; margin-top:10px;}
   
-  /* Estilo modificado para indicar que o campo está protegido por padrão */
   textarea.oper{
     width:100%;
     min-height:90px;
@@ -43,11 +49,6 @@
     border:1px solid #bbb;
     box-sizing: border-box;
     resize:vertical;
-    background-color: #fafafa;
-    cursor: pointer;
-  }
-  textarea.oper:focus {
-    outline: none;
   }
 
   .title-bar{display:block;text-align:center;padding:8px;border:1px solid var(--border);background:var(--titlebar);font-weight:700;margin-bottom:8px}
@@ -79,27 +80,31 @@
     <input id="monthPick" type="month" />
     <button id="btnGenerate" class="btn-primary">Gerar Rodízio</button>
     <button id="btnPDF" class="btn-pdf">Exportar PDF</button>
+    
+    <button id="btnLock" class="btn-lock" onclick="verificarSenha()">🔓 Editar Operadores</button>
   </div>
 
-  <div class="panel">
-    <div class="card">
-      <h3>Operadores — Sequência Base (Clique para editar com senha)</h3>
+  <div id="painelEditores">
+    <div class="panel">
+      <div class="card">
+        <h3>Operadores — Sequência Base (Ordem da Fila)</h3>
 
-      <label><strong>Culto (Dom / Ter / Qui)</strong></label>
-      <textarea id="opsCulto" class="oper" readonly onclick="verificarSenha(this)">CESA
+        <label><strong>Culto (Dom / Ter / Qui)</strong></label>
+        <textarea id="opsCulto" class="oper">CESA
 ROMULO
 DANIEL
 FABIO</textarea>
 
-      <label><strong>Reunião de Jovens (Todos os domingos)</strong></label>
-      <textarea id="opsReuniao" class="oper" readonly onclick="verificarSenha(this)">DANIEL F.N
+        <label><strong>Reunião de Jovens (Todos os domingos)</strong></label>
+        <textarea id="opsReuniao" class="oper">DANIEL F.N
 JONATAS</textarea>
 
-      <label><strong>Ensaio Local</strong></label>
-      <textarea id="opsEnsaio" class="oper" readonly onclick="verificarSenha(this)">JONATAS</textarea>
+        <label><strong>Ensaio Local</strong></label>
+        <textarea id="opsEnsaio" class="oper">JONATAS</textarea>
 
-      <label><strong>Culto de Jovens</strong></label>
-      <textarea id="opsCultoJovem" class="oper" readonly onclick="verificarSenha(this)">FABIO</textarea>
+        <label><strong>Culto de Jovens</strong></label>
+        <textarea id="opsCultoJovem" class="oper">FABIO</textarea>
+      </div>
     </div>
   </div>
 
@@ -113,35 +118,35 @@ const dayName = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta
 const SEMANA_ENSAIO = 2;      
 const SEMANA_CULTO_JOVEM = 2; 
 
-// 🔑 CONFIGURAÇÃO DA SENHA (Mude aqui se quiser outra senha)
+// 🔑 CONFIGURAÇÃO DA SENHA (Mude aqui se quiser)
 const SENHA_CORRETA = "1234";
-let editadoLiberado = false;
 
-// Mês base fixado estritamente em Junho de 2026 para cálculo de transições
+// Mês base fixado em Junho de 2026 para cálculo de transições
 const REF_YEAR = 2026;
-const REF_MONTH = 5; // Junho (Base 0)
+const REF_MONTH = 5; 
 
 function daysInMonth(year, mIdx){ return new Date(year, mIdx+1, 0).getDate(); }
 function fmtShort(dt){ return dt.getDate() + '-' + monthShort[dt.getMonth()].toLowerCase(); }
 
-// Função para validar o acesso às caixas de texto
-function verificarSenha(elemento) {
-  if (editadoLiberado) return; // Se já foi liberado, não pede novamente nesta sessão
+// Função que valida a senha para mostrar/esconder o painel de configuração
+function verificarSenha() {
+  const painel = document.getElementById('painelEditores');
+  const botao = document.getElementById('btnLock');
 
-  const senhaDigitada = prompt("Digite a senha para liberar a alteração da ordem dos irmãos:");
+  // Se já estiver aberto, o botão fecha o painel voluntariamente
+  if (painel.style.display === "block") {
+    painel.style.display = "none";
+    botao.textContent = "🔓 Editar Operadores";
+    return;
+  }
+
+  const senhaDigitada = prompt("Digite a senha de administrador para modificar as listas:");
   
   if (senhaDigitada === SENHA_CORRETA) {
-    editadoLiberado = true;
-    // Libera todos os textareas removendo o atributo 'readonly' e mudando o visual
-    const campos = document.querySelectorAll('textarea.oper');
-    campos.forEach(campo => {
-      campo.removeAttribute('readonly');
-      campo.style.backgroundColor = "#ffffff";
-      campo.style.cursor = "text";
-    });
-    elemento.focus(); // Coloca o cursor no campo que o usuário clicou
+    painel.style.display = "block";
+    botao.textContent = "🔒 Fechar Editor";
   } else if (senhaDigitada !== null) {
-    alert("Senha incorreta! A ordem não foi liberada para edição.");
+    alert("Senha incorreta! Acesso negado.");
   }
 }
 
@@ -310,14 +315,12 @@ document.getElementById("btnPDF").addEventListener("click", () => {
   html2pdf().set(opt).from(area).save();
 });
 
-// Inicializa no mês atual (Junho de 2026)
+// Inicialização automática
 const now = new Date();
 document.getElementById('monthPick').value =
   now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
 
 document.getElementById('btnGenerate').addEventListener('click', gerarRodizio);
-
-// Executa automaticamente na abertura
 gerarRodizio();
 </script>
 
