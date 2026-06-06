@@ -92,15 +92,15 @@ JONATAS</textarea>
 </div>
 
 <script>
-const monthShort = ['JAN.','FEV.','MAR.','ABR.','MAI.','JUN.','JUL.','AGO.SET.','OUT.','NOV.','DEZ.'];
+const monthShort = ['JAN.','FEV.','MAR.','ABR.','MAI.','JUN.','JUL.','AGO.','SET.','OUT.','NOV.','DEZ.'];
 const dayName = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 
 const SEMANA_ENSAIO = 2;      
 const SEMANA_CULTO_JOVEM = 2; 
 
-// Ano e Mês de referência (Junho de 2026 baseado na sua imagem)
+// Mês base fixado estritamente em Junho de 2026 para cálculo de transições
 const REF_YEAR = 2026;
-const REF_MONTH = 5; // Junho é índice 5 (0 = Jan, 1 = Fev...)
+const REF_MONTH = 5; // Junho (Base 0)
 
 function daysInMonth(year, mIdx){ return new Date(year, mIdx+1, 0).getDate(); }
 function fmtShort(dt){ return dt.getDate() + '-' + monthShort[dt.getMonth()].toLowerCase(); }
@@ -128,56 +128,55 @@ function allWeekdays(year, monthIdx, wanted){
 
 function parseArea(text){ return text.split('\n').map(s=>s.trim()).filter(s=>s.length>0); }
 
-// Conta quantos eventos de determinados dias da semana aconteceram cumulativamente desde a data de referência
+// Conta quantos cultos acumulados se passaram desde o início de Junho de 2026 até o mês pretendido
 function countEventsSinceRef(targetYear, targetMonth, wantedDays) {
   let totalEvents = 0;
   
-  // Se o usuário escolher um mês anterior à referência, calculamos de forma reversa
-  if (targetYear < REF_YEAR || (targetYear === REF_YEAR && targetMonth < REF_MONTH)) {
-    let currentY = targetYear;
-    let currentM = targetMonth;
-    while (currentY < REF_YEAR || currentM < REF_MONTH) {
-      totalEvents -= allWeekdays(currentY, currentM, wantedDays).length;
-      currentM++;
-      if (currentM > 11) { currentM = 0; currentY++; }
+  let start = new Date(REF_YEAR, REF_MONTH, 1, 12, 0, 0);
+  let end = new Date(targetYear, targetMonth, 1, 12, 0, 0);
+  
+  if (start.getTime() === end.getTime()) return 0;
+  
+  if (end < start) {
+    let current = new Date(end);
+    while (current < start) {
+      totalEvents -= allWeekdays(current.getFullYear(), current.getMonth(), wantedDays).length;
+      current.setMonth(current.getMonth() + 1);
+    }
+    return totalEvents;
+  } else {
+    let current = new Date(start);
+    while (current < end) {
+      totalEvents += allWeekdays(current.getFullYear(), current.getMonth(), wantedDays).length;
+      current.setMonth(current.getMonth() + 1);
     }
     return totalEvents;
   }
-  
-  // Caso comum: Meses futuros após Junho de 2026
-  let currentY = REF_YEAR;
-  let currentM = REF_MONTH;
-  while (currentY < targetYear || currentM < targetMonth) {
-    totalEvents += allWeekdays(currentY, currentM, wantedDays).length;
-    currentM++;
-    if (currentM > 11) { currentM = 0; currentY++; }
-  }
-  return totalEvents;
 }
 
-// Conta a quantidade de eventos pontuais mensais (como ensaios ou culto de jovens) ocorridos até o mês alvo
+// Conta quantos eventos mensais fixos (Ensaios / Cultos Jovens) se passaram
 function countMonthlyEventsSinceRef(targetYear, targetMonth, weekday, nthWeek) {
   let totalEvents = 0;
+  let start = new Date(REF_YEAR, REF_MONTH, 1, 12, 0, 0);
+  let end = new Date(targetYear, targetMonth, 1, 12, 0, 0);
   
-  if (targetYear < REF_YEAR || (targetYear === REF_YEAR && targetMonth < REF_MONTH)) {
-    let currentY = targetYear;
-    let currentM = targetMonth;
-    while (currentY < REF_YEAR || currentM < REF_MONTH) {
-      if (nthWeekday(currentY, currentM, weekday, nthWeek)) totalEvents--;
-      currentM++;
-      if (currentM > 11) { currentM = 0; currentY++; }
+  if (start.getTime() === end.getTime()) return 0;
+  
+  if (end < start) {
+    let current = new Date(end);
+    while (current < start) {
+      if (nthWeekday(current.getFullYear(), current.getMonth(), weekday, nthWeek)) totalEvents--;
+      current.setMonth(current.getMonth() + 1);
+    }
+    return totalEvents;
+  } else {
+    let current = new Date(start);
+    while (current < end) {
+      if (nthWeekday(current.getFullYear(), current.getMonth(), weekday, nthWeek)) totalEvents++;
+      current.setMonth(current.getMonth() + 1);
     }
     return totalEvents;
   }
-
-  let currentY = REF_YEAR;
-  let currentM = REF_MONTH;
-  while (currentY < targetYear || currentM < targetMonth) {
-    if (nthWeekday(currentY, currentM, weekday, nthWeek)) totalEvents++;
-    currentM++;
-    if (currentM > 11) { currentM = 0; currentY++; }
-  }
-  return totalEvents;
 }
 
 function sectionHTML(title, color, rows){
@@ -206,10 +205,8 @@ function gerarRodizio(){
     return;
   }
 
-  // 1. CULTOS OFICIAIS (Dom, Ter, Qui)
-  // Descobre quantos cultos se passaram desde Junho para achar o ponto de início (ponteiro) exato
+  // 1. CULTOS OFICIAIS
   let cultosPassados = countEventsSinceRef(y, mi, [0, 2, 4]);
-  // Correção matemática para lidar com resíduos negativos se consultarem meses passados
   let pC = (cultosPassados % opsCulto.length + opsCulto.length) % opsCulto.length;
 
   const cultoDates = allWeekdays(y, mi, [0,2,4]);
@@ -219,7 +216,7 @@ function gerarRodizio(){
     irmao: opsCulto[pC++ % opsCulto.length]
   }));
 
-  // 2. REUNIÃO DE JOVENS (Todos os domingos)
+  // 2. REUNIÃO DE JOVENS
   let reunioesPassadas = countEventsSinceRef(y, mi, [0]);
   let pR = (reunioesPassadas % opsReuniao.length + opsReuniao.length) % opsReuniao.length;
 
@@ -230,7 +227,7 @@ function gerarRodizio(){
     irmao: opsReuniao[pR++ % opsReuniao.length]
   }));
 
-  // 3. ENSAIO LOCAL (2ª Sexta-feira do mês)
+  // 3. ENSAIO LOCAL
   let ensaiosPassados = countMonthlyEventsSinceRef(y, mi, 5, SEMANA_ENSAIO);
   let pE = (ensaiosPassados % opsEnsaio.length + opsEnsaio.length) % opsEnsaio.length;
 
@@ -241,11 +238,9 @@ function gerarRodizio(){
     irmao: opsEnsaio[pE++ % opsEnsaio.length]
   }] : [];
 
-  // 4. CULTO DE JOVENS (2º Sábado do mês)
+  // 4. CULTO DE JOVENS
   let cultosJovensPassados = countMonthlyEventsSinceRef(y, mi, 6, SEMANA_CULTO_JOVEM);
-  let pJ = (cultosJovensPassados % opsCultoJov.length + opsCultoJov.length) % opsCultovJov.length;
-  // Correção de digitação interna para garantir leitura estável
-  if(isNaN(pJ)) pJ = (cultosJovensPassados % opsCultoJov.length + opsCultoJov.length) % opsCultoJov.length;
+  let pJ = (cultosJovensPassados % opsCultoJov.length + opsCultoJov.length) % opsCultoJov.length;
 
   const dtSab = nthWeekday(y, mi, 6, SEMANA_CULTO_JOVEM);
   const cultoJovRows = dtSab ? [{
@@ -265,7 +260,7 @@ function gerarRodizio(){
 
 document.getElementById("btnPDF").addEventListener("click", () => {
   const area = document.getElementById("resultArea");
-  const mesTexto = document.getElementById('previewMes').textContent.replace(/ \/ /g, "-");
+  const mesTexto = document.getElementById('previewMes').textContent;
 
   const opt = {
     margin: 12,
@@ -278,12 +273,14 @@ document.getElementById("btnPDF").addEventListener("click", () => {
   html2pdf().set(opt).from(area).save();
 });
 
-// Inicialização focada no mês atual do calendário do usuário
+// Inicializa no mês atual (Junho de 2026)
 const now = new Date();
 document.getElementById('monthPick').value =
   now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
 
 document.getElementById('btnGenerate').addEventListener('click', gerarRodizio);
+
+// Executa automaticamente na abertura
 gerarRodizio();
 </script>
 
