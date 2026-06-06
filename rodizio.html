@@ -33,7 +33,22 @@
   .card{flex:1 1 360px;padding:12px;border:1px solid var(--border);background: #fff}
   .card h3{margin:0 0 8px;font-size:16px}
   .card label {display:block; margin-top:10px;}
-  textarea.oper{width:100%;min-height:90px;font-size:14px;padding:8px;border:1px solid #bbb;box-sizing: border-box; resize:vertical}
+  
+  /* Estilo modificado para indicar que o campo está protegido por padrão */
+  textarea.oper{
+    width:100%;
+    min-height:90px;
+    font-size:14px;
+    padding:8px;
+    border:1px solid #bbb;
+    box-sizing: border-box;
+    resize:vertical;
+    background-color: #fafafa;
+    cursor: pointer;
+  }
+  textarea.oper:focus {
+    outline: none;
+  }
 
   .title-bar{display:block;text-align:center;padding:8px;border:1px solid var(--border);background:var(--titlebar);font-weight:700;margin-bottom:8px}
   table.sheet{width:100%;border-collapse:collapse;margin:8px 0 18px;font-size:14px}
@@ -68,23 +83,23 @@
 
   <div class="panel">
     <div class="card">
-      <h3>Operadores — Sequência Base (Ordem da Fila)</h3>
+      <h3>Operadores — Sequência Base (Clique para editar com senha)</h3>
 
       <label><strong>Culto (Dom / Ter / Qui)</strong></label>
-      <textarea id="opsCulto" class="oper">CESA
+      <textarea id="opsCulto" class="oper" readonly onclick="verificarSenha(this)">CESA
 ROMULO
 DANIEL
 FABIO</textarea>
 
       <label><strong>Reunião de Jovens (Todos os domingos)</strong></label>
-      <textarea id="opsReuniao" class="oper">DANIEL F.N
+      <textarea id="opsReuniao" class="oper" readonly onclick="verificarSenha(this)">DANIEL F.N
 JONATAS</textarea>
 
       <label><strong>Ensaio Local</strong></label>
-      <textarea id="opsEnsaio" class="oper">JONATAS</textarea>
+      <textarea id="opsEnsaio" class="oper" readonly onclick="verificarSenha(this)">JONATAS</textarea>
 
       <label><strong>Culto de Jovens</strong></label>
-      <textarea id="opsCultoJovem" class="oper">FABIO</textarea>
+      <textarea id="opsCultoJovem" class="oper" readonly onclick="verificarSenha(this)">FABIO</textarea>
     </div>
   </div>
 
@@ -98,12 +113,37 @@ const dayName = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta
 const SEMANA_ENSAIO = 2;      
 const SEMANA_CULTO_JOVEM = 2; 
 
+// 🔑 CONFIGURAÇÃO DA SENHA (Mude aqui se quiser outra senha)
+const SENHA_CORRETA = "1234";
+let editadoLiberado = false;
+
 // Mês base fixado estritamente em Junho de 2026 para cálculo de transições
 const REF_YEAR = 2026;
 const REF_MONTH = 5; // Junho (Base 0)
 
 function daysInMonth(year, mIdx){ return new Date(year, mIdx+1, 0).getDate(); }
 function fmtShort(dt){ return dt.getDate() + '-' + monthShort[dt.getMonth()].toLowerCase(); }
+
+// Função para validar o acesso às caixas de texto
+function verificarSenha(elemento) {
+  if (editadoLiberado) return; // Se já foi liberado, não pede novamente nesta sessão
+
+  const senhaDigitada = prompt("Digite a senha para liberar a alteração da ordem dos irmãos:");
+  
+  if (senhaDigitada === SENHA_CORRETA) {
+    editadoLiberado = true;
+    // Libera todos os textareas removendo o atributo 'readonly' e mudando o visual
+    const campos = document.querySelectorAll('textarea.oper');
+    campos.forEach(campo => {
+      campo.removeAttribute('readonly');
+      campo.style.backgroundColor = "#ffffff";
+      campo.style.cursor = "text";
+    });
+    elemento.focus(); // Coloca o cursor no campo que o usuário clicou
+  } else if (senhaDigitada !== null) {
+    alert("Senha incorreta! A ordem não foi liberada para edição.");
+  }
+}
 
 function nthWeekday(year, monthIdx, weekday, n){
   let count=0;
@@ -128,10 +168,8 @@ function allWeekdays(year, monthIdx, wanted){
 
 function parseArea(text){ return text.split('\n').map(s=>s.trim()).filter(s=>s.length>0); }
 
-// Conta quantos cultos acumulados se passaram desde o início de Junho de 2026 até o mês pretendido
 function countEventsSinceRef(targetYear, targetMonth, wantedDays) {
   let totalEvents = 0;
-  
   let start = new Date(REF_YEAR, REF_MONTH, 1, 12, 0, 0);
   let end = new Date(targetYear, targetMonth, 1, 12, 0, 0);
   
@@ -154,7 +192,6 @@ function countEventsSinceRef(targetYear, targetMonth, wantedDays) {
   }
 }
 
-// Conta quantos eventos mensais fixos (Ensaios / Cultos Jovens) se passaram
 function countMonthlyEventsSinceRef(targetYear, targetMonth, weekday, nthWeek) {
   let totalEvents = 0;
   let start = new Date(REF_YEAR, REF_MONTH, 1, 12, 0, 0);
