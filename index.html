@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Rodízio de Cultos — Gerador Automático</title>
+<title>Rodízio de Cultos — Sequência Dinâmica</title>
 
 <style>
   :root{
@@ -19,7 +19,7 @@
     font-family: Arial, sans-serif;
     margin:0; background:#f7f7f7; color:#111;
   }
-  .wrap{max-width:1100px;margin:18px auto;padding:16px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  .wrap{max-width:1100px;margin:18px auto;padding:166px;padding:16px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.06)}
   h1{font-size:28px;margin:0 0 6px;text-align:center}
   .sub{ text-align:center;color:#333;margin-bottom:12px }
 
@@ -28,12 +28,27 @@
   button{cursor:pointer;border:1px solid #888;background:#eee}
   .btn-primary{background:#2e6be6;color:#fff;border-color:#2e6be6}
   .btn-pdf{background:#c62828;color:#fff;border-color:#b71c1c}
+  .btn-lock{background:#f0a500;color:#fff;border-color:#d49200;font-weight:bold}
 
-  .panel{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+  #painelEditores {
+    display: none;
+    margin-bottom: 12px;
+  }
+
+  .panel{display:flex;gap:16px;flex-wrap:wrap;}
   .card{flex:1 1 360px;padding:12px;border:1px solid var(--border);background: #fff}
   .card h3{margin:0 0 8px;font-size:16px}
   .card label {display:block; margin-top:10px;}
-  textarea.oper{width:100%;min-height:90px;font-size:14px;padding:8px;border:1px solid #bbb;box-sizing: border-box; resize:vertical}
+  
+  textarea.oper{
+    width:100%;
+    min-height:90px;
+    font-size:14px;
+    padding:8px;
+    border:1px solid #bbb;
+    box-sizing: border-box;
+    resize:vertical;
+  }
 
   .title-bar{display:block;text-align:center;padding:8px;border:1px solid var(--border);background:var(--titlebar);font-weight:700;margin-bottom:8px}
   table.sheet{width:100%;border-collapse:collapse;margin:8px 0 18px;font-size:14px}
@@ -45,7 +60,6 @@
     .card{min-width:unset}
   }
   
-  /* Ajustes para impressão limpa no PDF */
   @media print {
     body { background: #fff; }
     .wrap { box-shadow: none; margin: 0; padding: 0; }
@@ -64,30 +78,32 @@
     <label for="monthPick">Mês:</label>
     <input id="monthPick" type="month" />
     <button id="btnGenerate" class="btn-primary">Gerar Rodízio</button>
-
     <button id="btnPDF" class="btn-pdf">Exportar PDF</button>
+    
+    <button id="btnLock" class="btn-lock" onclick="verificarSenha()">🔓 Editar Operadores</button>
   </div>
 
-  <div class="panel">
-    <div class="card">
-      <h3>Operadores — cada nome em uma linha</h3>
+  <div id="painelEditores">
+    <div class="panel">
+      <div class="card">
+        <h3>Operadores — Lista Ativa Atual</h3>
 
-      <label><strong>Culto (Dom / Ter / Qui)</strong></label>
-      <textarea id="opsCulto" class="oper">ABIMAEL
+        <label><strong>Culto (Dom / Ter / Qui)</strong></label>
+        <textarea id="opsCulto" class="oper">CESA
+ROMULO
 DANIEL
-FABIO
+FABIO</textarea>
+
+        <label><strong>Reunião de Jovens (Todos os domingos)</strong></label>
+        <textarea id="opsReuniao" class="oper">DANIEL F.N
 JONATAS</textarea>
 
-      <label><strong>Reunião de Jovens (Todos os domingos)</strong></label>
-      <textarea id="opsReuniao" class="oper">ABIMAEL
-DANIEL FEIRA NOVA</textarea>
+        <label><strong>Ensaio Local</strong></label>
+        <textarea id="opsEnsaio" class="oper">JONATAS</textarea>
 
-      <label><strong>Ensaio Local</strong></label>
-      <textarea id="opsEnsaio" class="oper">JONATAS</textarea>
-
-      <label><strong>Culto de Jovens</strong></label>
-      <textarea id="opsCultoJovem" class="oper">FABIO</textarea>
-
+        <label><strong>Culto de Jovens</strong></label>
+        <textarea id="opsCultoJovem" class="oper">FABIO</textarea>
+      </div>
     </div>
   </div>
 
@@ -96,29 +112,39 @@ DANIEL FEIRA NOVA</textarea>
 
 <script>
 const monthShort = ['JAN.','FEV.','MAR.','ABR.','MAI.','JUN.','JUL.','AGO.','SET.','OUT.','NOV.','DEZ.'];
-const dayName = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+const dayName = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 
-// Configuração de semanas dos eventos fixos (Altere se na sua comum for diferente)
-const SEMANA_ENSAIO = 2;      // 2ª Sexta-feira do mês
-const SEMANA_CULTO_JOVEM = 2; // 2º Sábado do mês
+const SEMANA_ENSAIO = 2;      
+const SEMANA_CULTO_JOVEM = 2; 
+const SENHA_CORRETA = "1234";
 
-function daysInMonth(year, mIdx){ 
-  return new Date(year, mIdx+1, 0).getDate(); 
-}
+function daysInMonth(year, mIdx){ return new Date(year, mIdx+1, 0).getDate(); }
+function fmtShort(dt){ return dt.getDate() + '-' + monthShort[dt.getMonth()].toLowerCase(); }
 
-function fmtShort(dt){ 
-  return dt.getDate() + '-' + monthShort[dt.getMonth()].toLowerCase(); 
+function verificarSenha() {
+  const painel = document.getElementById('painelEditores');
+  const botao = document.getElementById('btnLock');
+
+  if (painel.style.display === "block") {
+    painel.style.display = "none";
+    botao.textContent = "🔓 Editar Operadores";
+    return;
+  }
+
+  const senhaDigitada = prompt("Digite a senha de administrador para modificar as listas:");
+  if (senhaDigitada === SENHA_CORRETA) {
+    painel.style.display = "block";
+    botao.textContent = "🔒 Fechar Editor";
+  } else if (senhaDigitada !== null) {
+    alert("Senha incorreta! Acesso negado.");
+  }
 }
 
 function nthWeekday(year, monthIdx, weekday, n){
   let count=0;
   for(let d=1; d<=daysInMonth(year, monthIdx); d++){
-    // Força 12:00:00 para evitar quebra de fuso horário local
     const dt = new Date(year, monthIdx, d, 12, 0, 0);
-    if(dt.getDay()===weekday){ 
-      count++; 
-      if(count===n) return dt; 
-    }
+    if(dt.getDay()===weekday){ count++; if(count===n) return dt; }
   }
   return null;
 }
@@ -132,84 +158,180 @@ function allWeekdays(year, monthIdx, wanted){
   return arr; 
 }
 
-function parseArea(text){ 
-  return text.split('\n').map(s=>s.trim()).filter(s=>s.length>0); 
+function parseArea(text){ return text.split('\n').map(s=>s.trim()).filter(s=>s.length>0); }
+
+// Conta quantos eventos se passaram entre duas datas quaisquer de forma precisa
+function countEventsBetween(startYear, startMonth, endYear, endMonth, wantedDays) {
+  let totalEvents = 0;
+  let start = new Date(startYear, startMonth, 1, 12, 0, 0);
+  let end = new Date(endYear, endMonth, 1, 12, 0, 0);
+  
+  if (start.getTime() === end.getTime()) return 0;
+  
+  if (end < start) {
+    let current = new Date(end);
+    while (current < start) {
+      totalEvents -= allWeekdays(current.getFullYear(), current.getMonth(), wantedDays).length;
+      current.setMonth(current.getMonth() + 1);
+    }
+    return totalEvents;
+  } else {
+    let current = new Date(start);
+    while (current < end) {
+      totalEvents += allWeekdays(current.getFullYear(), current.getMonth(), wantedDays).length;
+      current.setMonth(current.getMonth() + 1);
+    }
+    return totalEvents;
+  }
+}
+
+function countMonthlyEventsBetween(startYear, startMonth, endYear, endMonth, weekday, nthWeek) {
+  let totalEvents = 0;
+  let start = new Date(startYear, startMonth, 1, 12, 0, 0);
+  let end = new Date(endYear, endMonth, 1, 12, 0, 0);
+  
+  if (start.getTime() === end.getTime()) return 0;
+  
+  if (end < start) {
+    let current = new Date(end);
+    while (current < start) {
+      if (nthWeekday(current.getFullYear(), current.getMonth(), weekday, nthWeek)) totalEvents--;
+      current.setMonth(current.getMonth() + 1);
+    }
+    return totalEvents;
+  } else {
+    let current = new Date(start);
+    while (current < end) {
+      if (nthWeekday(current.getFullYear(), current.getMonth(), weekday, nthWeek)) totalEvents++;
+      current.setMonth(current.getMonth() + 1);
+    }
+    return totalEvents;
+  }
 }
 
 function sectionHTML(title, color, rows){
-  if (rows.length === 0) return ''; // Não renderiza tabelas vazias
+  if (rows.length === 0) return ''; 
   let html = `<div class="title-bar" style="background:${color}">${title}</div>`;
   html += `<table class="sheet"><tr><th style="width: 30%;">DIA</th><th style="width: 25%;">DATA</th><th>IRMÃO</th></tr>`;
-  rows.forEach(r => html += `<tr><td>${r.dia}</td><td>${r.data}</td><td><strong>${r.irmao}</strong></td></tr>`);
+  rows.forEach(r => html += `<tr><td>${r.dia}</td><td>${r.data}</td><td>${r.irmao}</td></tr>`);
   html += `</table>`;
   return html;
 }
 
-function gerarRodizio(){
+// Inicializa ou resgata os dados da última edição salva
+function obterDadosReferencia() {
+  const refSalva = localStorage.getItem('ccb_ref_data');
+  if (refSalva) {
+    return JSON.parse(refSalva);
+  }
+  // Padrão inicial: Junho de 2026
+  return {
+    year: 2026,
+    month: 5, 
+    opsCulto: ["CESA", "ROMULO", "DANIEL", "FABIO"],
+    opsReuniao: ["DANIEL F.N", "JONATAS"],
+    opsEnsaio: ["JONATAS"],
+    opsCultoJovem: ["FABIO"]
+  };
+}
+
+function carregarCamposInterface() {
+  const dados = obterDadosReferencia();
+  document.getElementById('opsCulto').value = dados.opsCulto.join('\n');
+  document.getElementById('opsReuniao').value = dados.opsReuniao.join('\n');
+  document.getElementById('opsEnsaio').value = dados.opsEnsaio.join('\n');
+  document.getElementById('opsCultoJovem').value = dados.opsCultoJovem.join('\n');
+}
+
+function gerenciarMudancaEdicao(anoAlvo, mesAlvo) {
+  // Se as caixas estiverem abertas, significa que o usuário alterou dados. Salvamos como nova referência!
+  if (document.getElementById('painelEditores').style.display === "block" || !localStorage.getItem('ccb_ref_data')) {
+    const novaRef = {
+      year: anoAlvo,
+      month: mesAlvo,
+      opsCulto: parseArea(document.getElementById('opsCulto').value),
+      opsReuniao: parseArea(document.getElementById('opsReuniao').value),
+      opsEnsaio: parseArea(document.getElementById('opsEnsaio').value),
+      opsCultoJovem: parseArea(document.getElementById('opsCultoJovem').value)
+    };
+    localStorage.setItem('ccb_ref_data', JSON.stringify(novaRef));
+  }
+}
+
+function gerarRodizio() {
   const monthVal = document.getElementById('monthPick').value;
   if(!monthVal) return alert('Selecione o mês.');
-  const [y,m] = monthVal.split('-').map(Number);
+  const [y, m] = monthVal.split('-').map(Number);
   const mi = m - 1;
+
+  // 1. Salva a edição se o painel estiver aberto na tela antes de processar
+  gerenciarMudancaEdicao(y, mi);
+
+  // 2. Busca de onde deve partir o cálculo (Mês da última modificação)
+  const ref = obterDadosReferencia();
   document.getElementById('previewMes').textContent = monthShort[mi] + ' - ' + y;
 
-  const opsCulto = parseArea(document.getElementById('opsCulto').value);
-  const opsReuniao = parseArea(document.getElementById('opsReuniao').value);
-  const opsEnsaio = parseArea(document.getElementById('opsEnsaio').value);
-  const opsCultoJov = parseArea(document.getElementById('opsCultoJovem').value);
-
-  if([opsCulto, opsReuniao, opsEnsaio, opsCultoJov].some(arr => arr.length === 0)){
-    alert("Por favor, preencha pelo menos um nome em cada categoria de operador.");
+  if([ref.opsCulto, ref.opsReuniao, ref.opsEnsaio, ref.opsCultoJovem].some(arr => arr.length === 0)){
+    alert("As listas não podem ficar vazias.");
     return;
   }
 
-  let pC=0, pR=0, pE=0, pJ=0;
+  // 3. CULTOS OFICIAIS (Calcula a distância partindo estritamente da última edição efetuada)
+  let cultosPassados = countEventsBetween(ref.year, ref.month, y, mi, [0, 2, 4]);
+  let pC = (cultosPassados % ref.opsCulto.length + ref.opsCulto.length) % ref.opsCulto.length;
 
-  // Cultos oficiais (Domingo = 0, Terça = 2, Quinta = 4)
   const cultoDates = allWeekdays(y, mi, [0,2,4]);
   const cultoRows = cultoDates.map(dt => ({
     dia: dayName[dt.getDay()],
     data: fmtShort(dt),
-    irmao: opsCulto[pC++ % opsCulto.length]
+    irmao: ref.opsCulto[pC++ % ref.opsCulto.length]
   }));
 
-  // Reunião de Jovens (Todos os domingos)
+  // 4. REUNIÃO DE JOVENS
+  let reunioesPassadas = countEventsBetween(ref.year, ref.month, y, mi, [0]);
+  let pR = (reunioesPassadas % ref.opsReuniao.length + ref.opsReuniao.length) % ref.opsReuniao.length;
+
   const doms = allWeekdays(y, mi, [0]);
   const reuniaoRows = doms.map(dt => ({
     dia: dayName[dt.getDay()],
     data: fmtShort(dt),
-    irmao: opsReuniao[pR++ % opsReuniao.length]
+    irmao: ref.opsReuniao[pR++ % ref.opsReuniao.length]
   }));
 
-  // Ensaio Local (Sexta-feira = 5)
+  // 5. ENSAIO LOCAL
+  let ensaiosPassados = countMonthlyEventsBetween(ref.year, ref.month, y, mi, 5, SEMANA_ENSAIO);
+  let pE = (ensaiosPassados % ref.opsEnsaio.length + ref.opsEnsaio.length) % ref.opsEnsaio.length;
+
   const dtSexta = nthWeekday(y, mi, 5, SEMANA_ENSAIO);
   const ensaioRows = dtSexta ? [{
     dia: dayName[dtSexta.getDay()],
     data: fmtShort(dtSexta),
-    irmao: opsEnsaio[pE++ % opsEnsaio.length]
+    irmao: ref.opsEnsaio[pE++ % ref.opsEnsaio.length]
   }] : [];
 
-  // Culto de Jovens (Sábado = 6)
+  // 6. CULTO DE JOVENS
+  let cultosJovensPassados = countMonthlyEventsBetween(ref.year, ref.month, y, mi, 6, SEMANA_CULTO_JOVEM);
+  let pJ = (cultosJovensPassados % ref.opsCultoJovem.length + ref.opsCultoJovem.length) % ref.opsCultoJovem.length;
+
   const dtSab = nthWeekday(y, mi, 6, SEMANA_CULTO_JOVEM);
   const cultoJovRows = dtSab ? [{
     dia: dayName[dtSab.getDay()],
     data: fmtShort(dtSab),
-    irmao: opsCultoJov[pJ++ % opsCultoJov.length]
+    irmao: ref.opsCultoJovem[pJ++ % ref.opsCultoJovem.length]
   }] : [];
 
   let out = '';
-  out += sectionHTML('CULTOS OFICIAIS:', '#e6e6e6', cultoRows);
-  out += sectionHTML('REUNIÃO DE JOVENS E MENORES:', 'var(--blue)', reuniaoRows);
-  out += sectionHTML('ENSAIO LOCAL:', 'var(--orange)', ensaioRows);
-  out += sectionHTML('CULTO DE JOVENS E MENORES:', 'var(--red)', cultoJovRows);
+  out += sectionHTML('CULTOS:', '#e6e6e6', cultoRows);
+  out += sectionHTML('REUNIÃO DE JOVENS:', 'var(--blue)', reuniaoRows);
+  out += sectionHTML('ENSAIO:', 'var(--orange)', ensaioRows);
+  out += sectionHTML('CULTO DE JOVENS:', 'var(--red)', cultoJovRows);
 
   document.getElementById('resultArea').innerHTML = out;
 }
 
-// Botão PDF com melhorias de renderização gráfica
 document.getElementById("btnPDF").addEventListener("click", () => {
   const area = document.getElementById("resultArea");
-  const mesTexto = document.getElementById('previewMes').textContent.replace(/ \/ /g, "-");
-
+  const mesTexto = document.getElementById('previewMes').textContent;
   const opt = {
     margin: 12,
     filename: `Rodizio_Cultos_${mesTexto}.pdf`,
@@ -217,16 +339,13 @@ document.getElementById("btnPDF").addEventListener("click", () => {
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
-
   html2pdf().set(opt).from(area).save();
 });
 
-// Inicialização com a data atual corrigida para timezone local
+// Inicialização Inteligente
+carregarCamposInterface();
 const now = new Date();
-document.getElementById('monthPick').value =
-  now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
-document.getElementById('previewMes').textContent =
-  monthShort[now.getMonth()] + ' - ' + now.getFullYear();
+document.getElementById('monthPick').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
 
 document.getElementById('btnGenerate').addEventListener('click', gerarRodizio);
 gerarRodizio();
